@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F0F2F5">
+
+    <!-- ===== HEADER ===== -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:orientation="horizontal"
+        android:padding="15dp"
+        android:background="#FFFFFF"
+        android:elevation="4dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="TT Chat"
+            android:textColor="#1877F2"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="🔍"
+            android:textSize="20sp"
+            android:layout_marginEnd="15dp"/>
+
+        <TextView
+            android:text="💬"
+            android:textSize="20sp"/>
+
+    </LinearLayout>
+
+    <!-- ===== SCROLL CONTENT ===== -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="70dp">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- ===== POST BOX ===== -->
+            <LinearLayout
+                android:orientation="horizontal"
+                android:background="#FFFFFF"
+                android:padding="10dp"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:text="🙂"
+                    android:textSize="20sp"
+                    android:layout_marginEnd="10dp"/>
+
+                <EditText
+                    android:hint="Bạn đang nghĩ gì?"
+                    android:background="@android:color/transparent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <!-- ===== STORY ===== -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#FFFFFF"
+                android:padding="10dp">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <!-- Story item -->
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_marginRight="10dp"
+                        android:layout_width="80dp"
+                        android:layout_height="120dp"
+                        android:background="#BBDEFB"
+                        android:gravity="center">
+
+                        <TextView android:text="+" android:textSize="24sp"/>
+                        <TextView android:text="Story"/>
+
+                    </LinearLayout>
+
+                    <!-- thêm nhiều story tương tự -->
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- ===== POST ===== -->
+            <LinearLayout
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="10dp"
+                android:layout_marginTop="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <!-- user -->
+                <TextView
+                    android:text="Nguyễn Văn A"
+                    android:textStyle="bold"/>
+
+                <!-- content -->
+                <TextView
+                    android:text="Hôm nay trời đẹp quá 😍"
+                    android:layout_marginTop="5dp"/>
+
+                <!-- image fake -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:background="#90CAF9"
+                    android:layout_marginTop="10dp"/>
+
+                <!-- actions -->
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_marginTop="10dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView android:text="👍 Like" android:layout_weight="1"/>
+                    <TextView android:text="💬 Comment" android:layout_weight="1"/>
+                    <TextView android:text="↗ Share" android:layout_weight="1"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
