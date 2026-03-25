@@ -1,3 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">HITCApp</string>
+    <string name="logout_text">Logout</string>
+    <string name="shoponline">TT Shop</string>
+    <string name="s_n_ph_m_1">Sản phẩm 1</string>
+    <string name="s_n_ph_m_2">Sản phẩm 2</string>
+    <string name="mua">Mua</string>
+    <string name="gi_100_000">Giá: 100,000đ</string>
+    <string name="gi_250_000">Giá: 250,000đ</string>
 </resources>
