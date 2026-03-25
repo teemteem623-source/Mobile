@@ -17,13 +17,13 @@
         android:layout_height="wrap_content">
 
         <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="@string/shoponline"
             android:textColor="#1877F2"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"/>
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnLogout"
@@ -119,6 +119,43 @@
                     android:backgroundTint="#64B5F6"
                     android:textColor="#FFFFFF"/>
             </LinearLayout>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="12dp"
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:background="#DECB20"/>
+
+                <TextView
+                    android:text="@string/s_n_ph_m_3"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"
+                    android:layout_height="30dp"
+                    android:layout_width="100dp"/>
+
+                <TextView
+                    android:text="@string/gi_250_000"
+                    android:layout_marginTop="4dp"
+                    android:layout_height="30dp"
+                    android:layout_width="100dp"/>
+
+                <Button
+                    android:text="@string/mua"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:backgroundTint="#64B5F6"
+                    android:textColor="#FFFFFF"/>
+            </LinearLayout>
+
 
             <!-- Thêm sản phẩm tương tự nếu cần -->
 

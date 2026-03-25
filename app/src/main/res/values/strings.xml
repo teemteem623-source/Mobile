@@ -7,4 +7,6 @@
     <string name="mua">Mua</string>
     <string name="gi_100_000">Giá: 100,000đ</string>
     <string name="gi_250_000">Giá: 250,000đ</string>
+    <string name="app_name" />
+    <string name="s_n_ph_m_3">Sản phẩm 3</string>
 </resources>
