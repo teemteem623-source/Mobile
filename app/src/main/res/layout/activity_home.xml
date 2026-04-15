@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -20,14 +21,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/shoponline"
+            android:text="Shop Online"
             android:textColor="#1877F2"
             android:textSize="20sp"
             android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnLogout"
-            android:text="@string/logout_text"
+            android:text="Đăng xuất"
             android:backgroundTint="#C80909"
             android:textColor="#FFFFFF"
             android:layout_width="wrap_content"
@@ -61,26 +62,44 @@
                     android:background="#90CAF9"/>
 
                 <TextView
-                    android:text="@string/s_n_ph_m_1"
+                    android:text="Sản phẩm 1"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_height="30dp"
-                    android:layout_width="100dp"/>
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
 
                 <TextView
-                    android:text="@string/gi_100_000"
+                    android:text="Giá: 100.000đ"
                     android:layout_marginTop="4dp"
-                    android:layout_height="30dp"
-                    android:layout_width="100dp"/>
-
-                <Button
-                    android:text="@string/mua"
                     android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:backgroundTint="#64B5F6"
-                    android:textColor="#FFFFFF"/>
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <Button
+                        android:id="@+id/btnCart1"
+                        android:text="Thêm vào giỏ hàng"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:backgroundTint="#64B5F6"
+                        android:textColor="#FFFFFF"/>
+
+                    <Button
+                        android:id="@+id/btnDetail1"
+                        android:text="Xem chi tiết"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:backgroundTint="#4CAF50"
+                        android:textColor="#FFFFFF"/>
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Product Item 2 -->
@@ -98,28 +117,47 @@
                     android:background="#F48FB1"/>
 
                 <TextView
-                    android:text="@string/s_n_ph_m_2"
+                    android:text="Sản phẩm 2"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_height="30dp"
-                    android:layout_width="100dp"/>
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
 
                 <TextView
-                    android:text="@string/gi_250_000"
+                    android:text="Giá: 250.000đ"
                     android:layout_marginTop="4dp"
-                    android:layout_height="30dp"
-                    android:layout_width="100dp"/>
-
-                <Button
-                    android:text="@string/mua"
                     android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:backgroundTint="#64B5F6"
-                    android:textColor="#FFFFFF"/>
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <Button
+                        android:id="@+id/btnCart2"
+                        android:text="Thêm vào giỏ hàng"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:backgroundTint="#64B5F6"
+                        android:textColor="#FFFFFF"/>
+
+                    <Button
+                        android:id="@+id/btnDetail2"
+                        android:text="Xem chi tiết"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:backgroundTint="#4CAF50"
+                        android:textColor="#FFFFFF"/>
+                </LinearLayout>
             </LinearLayout>
 
+            <!-- Product Item 3 -->
             <LinearLayout
                 android:orientation="vertical"
                 android:background="#FFFFFF"
@@ -134,30 +172,45 @@
                     android:background="#DECB20"/>
 
                 <TextView
-                    android:text="@string/s_n_ph_m_3"
+                    android:text="Sản phẩm 3"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_height="30dp"
-                    android:layout_width="100dp"/>
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
 
                 <TextView
-                    android:text="@string/gi_250_000"
+                    android:text="Giá: 250.000đ"
                     android:layout_marginTop="4dp"
-                    android:layout_height="30dp"
-                    android:layout_width="100dp"/>
-
-                <Button
-                    android:text="@string/mua"
                     android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:backgroundTint="#64B5F6"
-                    android:textColor="#FFFFFF"/>
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <Button
+                        android:id="@+id/btnCart3"
+                        android:text="Thêm vào giỏ hàng"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:backgroundTint="#64B5F6"
+                        android:textColor="#FFFFFF"/>
+
+                    <Button
+                        android:id="@+id/btnDetail3"
+                        android:text="Xem chi tiết"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:backgroundTint="#4CAF50"
+                        android:textColor="#FFFFFF"/>
+                </LinearLayout>
             </LinearLayout>
-
-
-            <!-- Thêm sản phẩm tương tự nếu cần -->
 
         </LinearLayout>
     </ScrollView>
