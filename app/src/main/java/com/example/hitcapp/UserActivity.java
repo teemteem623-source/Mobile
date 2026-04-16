@@ -38,6 +38,24 @@ public class UserActivity extends AppCompatActivity {
             });
         }
 
+        // --- GẮN LINK THÔNG TIN CÁ NHÂN (menuProfile) ---
+        LinearLayout menuProfile = findViewById(R.id.menuProfile);
+        if (menuProfile != null) {
+            menuProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(UserActivity.this, ProfileActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        // --- GẮN LINK ĐƠN HÀNG CỦA TÔI (menuOrders) ---
+        LinearLayout menuOrders = findViewById(R.id.menuOrders);
+        if (menuOrders != null) {
+            menuOrders.setOnClickListener(v -> {
+                Intent intent = new Intent(UserActivity.this, OderActivity.class);
+                startActivity(intent);
+            });
+        }
+
         // --- XỬ LÝ CÁC NÚT TRÊN TOP BAR ---
         findViewById(R.id.imgWallet).setOnClickListener(v -> 
             Toast.makeText(this, "Mở Ví tiền của bạn", Toast.LENGTH_SHORT).show());
@@ -46,18 +64,10 @@ public class UserActivity extends AppCompatActivity {
             Toast.makeText(this, "Cài đặt hệ thống", Toast.LENGTH_SHORT).show());
 
         // --- XỬ LÝ MENU CÀI ĐẶT ---
-        findViewById(R.id.menuProfile).setOnClickListener(v -> 
-            Toast.makeText(this, "Xem Hồ sơ cá nhân", Toast.LENGTH_SHORT).show());
-
-        findViewById(R.id.menuOrders).setOnClickListener(v -> 
-            Toast.makeText(this, "Xem Lịch sử đơn hàng", Toast.LENGTH_SHORT).show());
-
         findViewById(R.id.menuAddAccount).setOnClickListener(v -> 
             Toast.makeText(this, "Thêm tài khoản mới", Toast.LENGTH_SHORT).show());
 
         findViewById(R.id.menuLogout).setOnClickListener(v -> {
-            Toast.makeText(this, "Đang đăng xuất...", Toast.LENGTH_SHORT).show();
-            // Thực hiện chuyển về màn hình đăng nhập (ví dụ MainActivity hoặc LoginActivity)
             Intent intent = new Intent(this, MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -75,16 +85,13 @@ public class UserActivity extends AppCompatActivity {
                 int itemId = item.getItemId();
                 if (itemId == R.id.nav_home) {
                     startActivity(new Intent(this, HomeActivity.class));
-                    finish();
-                    return true;
+                    finish(); return true;
                 } else if (itemId == R.id.nav_products) {
                     startActivity(new Intent(this, ProductActivity.class));
-                    finish();
-                    return true;
+                    finish(); return true;
                 } else if (itemId == R.id.nav_notifications) {
                     startActivity(new Intent(this, NoticeActivity.class));
-                    finish();
-                    return true;
+                    finish(); return true;
                 } else if (itemId == R.id.nav_profile) {
                     return true; // Đang ở đây rồi
                 }
