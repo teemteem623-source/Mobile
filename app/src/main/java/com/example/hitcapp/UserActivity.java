@@ -56,6 +56,15 @@ public class UserActivity extends AppCompatActivity {
             });
         }
 
+        // --- GẮN LINK THÊM TÀI KHOẢN (menuAddAccount) ---
+        LinearLayout menuAddAccount = findViewById(R.id.menuAddAccount);
+        if (menuAddAccount != null) {
+            menuAddAccount.setOnClickListener(v -> {
+                Intent intent = new Intent(UserActivity.this, AddUserActivity.class);
+                startActivity(intent);
+            });
+        }
+
         // --- XỬ LÝ CÁC NÚT TRÊN TOP BAR ---
         findViewById(R.id.imgWallet).setOnClickListener(v -> 
             Toast.makeText(this, "Mở Ví tiền của bạn", Toast.LENGTH_SHORT).show());
@@ -63,10 +72,7 @@ public class UserActivity extends AppCompatActivity {
         findViewById(R.id.imgSettings).setOnClickListener(v -> 
             Toast.makeText(this, "Cài đặt hệ thống", Toast.LENGTH_SHORT).show());
 
-        // --- XỬ LÝ MENU CÀI ĐẶT ---
-        findViewById(R.id.menuAddAccount).setOnClickListener(v -> 
-            Toast.makeText(this, "Thêm tài khoản mới", Toast.LENGTH_SHORT).show());
-
+        // --- XỬ LÝ ĐĂNG XUẤT ---
         findViewById(R.id.menuLogout).setOnClickListener(v -> {
             Intent intent = new Intent(this, MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
