@@ -3,9 +3,6 @@ package com.example.hitcapp;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -16,7 +13,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+
 public class MainActivity extends AppCompatActivity {
+
+    private TextInputEditText edtIdentity, edtPassword;
+    private MaterialButton btnLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,59 +27,60 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        View mainView = findViewById(R.id.main);
-        if (mainView != null) {
-            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
-                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                v.setPadding(systemBars.left, systemBars.top,
-                        systemBars.right, systemBars.bottom);
-                return insets;
-            });
+        // Safe Area
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
+        // Ánh xạ
+        edtIdentity = findViewById(R.id.edtEmail);
+        edtPassword = findViewById(R.id.edtPassword);
+        btnLogin = findViewById(R.id.btnLogin);
+
+        // Nhận dữ liệu từ trang đăng ký (nếu có)
+        String registeredUser = getIntent().getStringExtra("REGISTERED_USER");
+        if (registeredUser != null) {
+            edtIdentity.setText(registeredUser);
+            Toast.makeText(this, "Vui lòng nhập mật khẩu để đăng nhập", Toast.LENGTH_SHORT).show();
         }
 
-        // ===== LOGIN =====
-        Button btnLogin = findViewById(R.id.btnLogin);
-
+        // ===== ĐĂNG NHẬP =====
         btnLogin.setOnClickListener(v -> {
-            EditText edtEmail = findViewById(R.id.edtEmail);
-            EditText edtPassword = findViewById(R.id.edtPassword);
+            String identity = edtIdentity.getText().toString().trim();
+            String password = edtPassword.getText().toString().trim();
 
-            String sEmail = edtEmail.getText().toString().trim();
-            String sPassword = edtPassword.getText().toString().trim();
+            if (identity.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-            if (sEmail.equals("Thanh") && sPassword.equals("123")) {
-                Intent it = new Intent(MainActivity.this, HomeActivity.class);
-                startActivity(it);
+            // Tìm kiếm tài khoản trong bộ nhớ
+            AccountStorage.User user = AccountStorage.findUser(this, identity);
+
+            if (user != null && user.password.equals(password)) {
+                Toast.makeText(this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(MainActivity.this, HomeActivity.class));
+                finish();
             } else {
-                Toast.makeText(
-                        MainActivity.this,
-                        "Email hoặc mật khẩu không đúng!",
-                        Toast.LENGTH_SHORT
-                ).show();
+                Toast.makeText(this, "Tài khoản hoặc mật khẩu không chính xác!", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // ===== REGISTER =====
-        TextView tvRegister = findViewById(R.id.tvRegister);
-        tvRegister.setOnClickListener(v -> {
-            Intent it = new Intent(MainActivity.this, RegisterActivity.class);
-            startActivity(it);
+        // ===== ĐĂNG KÝ =====
+        findViewById(R.id.tvRegister).setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, RegisterActivity.class));
         });
 
-        // ===== FACEBOOK ICON =====
-        ImageView imgFacebook = findViewById(R.id.imageView2);
-        imgFacebook.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse("https://www.facebook.com"));
-            startActivity(intent);
-        });
+        // ===== SOCIAL =====
+        findViewById(R.id.imageView2).setOnClickListener(v -> openLink("https://www.facebook.com"));
+        findViewById(R.id.imageView3).setOnClickListener(v -> openLink("https://www.google.com"));
+    }
 
-        // ===== GOOGLE ICON =====
-        ImageView imgGoogle = findViewById(R.id.imageView3);
-        imgGoogle.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse("https://www.google.com"));
-            startActivity(intent);
-        });
+    private void openLink(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse(url));
+        startActivity(intent);
     }
 }

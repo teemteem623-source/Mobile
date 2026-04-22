@@ -33,10 +33,10 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_home);
 
+        // --- XỬ LÝ SAFE AREA (Insets) ---
         View mainView = findViewById(R.id.main);
         View topBar = findViewById(R.id.topBarCard);
         bottomNavigation = findViewById(R.id.bottomNavigation);
@@ -44,53 +44,51 @@ public class HomeActivity extends AppCompatActivity {
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                
+                // Header: Status bar + 20dp cho đẹp
                 if (topBar != null) {
-                    topBar.setPadding(0, Math.max(0, systemBars.top - 20), 0, 0);
+                    topBar.setPadding(0, systemBars.top + (int)(20 * getResources().getDisplayMetrics().density), 0, 0);
                 }
-                
+                // Bottom Nav: Luôn dính sát phím điều hướng hệ thống (systemBars.bottom)
                 if (bottomNavigation != null) {
-                    bottomNavigation.setPadding(0, 0, 0, Math.max(0, systemBars.bottom - 20));
+                    bottomNavigation.setPadding(0, 0, 0, systemBars.bottom);
                 }
-                
-                return insets;
+                return WindowInsetsCompat.CONSUMED;
             });
         }
 
+        // Bottom Navigation logic
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_home);
             bottomNavigation.setOnItemSelectedListener(item -> {
                 int itemId = item.getItemId();
-                if (itemId == R.id.nav_home) {
-                    return true;
-                } else if (itemId == R.id.nav_products) {
+                if (itemId == R.id.nav_home) return true;
+                else if (itemId == R.id.nav_products) {
                     startActivity(new Intent(this, ProductActivity.class));
-                    finish();
-                    return true;
+                    finish(); return true;
                 } else if (itemId == R.id.nav_notifications) {
                     startActivity(new Intent(this, NoticeActivity.class));
-                    finish();
-                    return true;
+                    finish(); return true;
                 } else if (itemId == R.id.nav_profile) {
                     startActivity(new Intent(this, UserActivity.class));
-                    finish();
-                    return true;
+                    finish(); return true;
                 }
                 return false;
             });
         }
 
+        // Cart Icon
         ImageView imgCart = findViewById(R.id.imgCart);
         if (imgCart != null) {
             imgCart.setOnClickListener(v -> startActivity(new Intent(this, CartActivity.class)));
         }
 
+        // Banners
         viewPagerBanner = findViewById(R.id.viewPagerBanner);
         if (viewPagerBanner != null) {
             List<Integer> bannerImages = new ArrayList<>();
-            bannerImages.add(R.drawable.phone_mockup);
-            bannerImages.add(R.drawable.phone_mockup);
-            bannerImages.add(R.drawable.phone_mockup);
+            bannerImages.add(R.drawable.banner);
+            bannerImages.add(R.drawable.banner1);
+            bannerImages.add(R.drawable.banner2);
             viewPagerBanner.setAdapter(new BannerAdapter(bannerImages));
 
             bannerRunnable = () -> {
@@ -103,16 +101,23 @@ public class HomeActivity extends AppCompatActivity {
             bannerHandler.postDelayed(bannerRunnable, 4000);
         }
 
-        setupProductClicks();
+        // Sản phẩm nổi bật
+        setupFeaturedProduct(R.id.cardProduct1, "iPhone 15 Pro", "28.990.000đ", R.drawable.iphone15pro);
+        setupFeaturedProduct(R.id.cardProduct2, "Samsung S24", "25.490.000đ", R.drawable.samsungs24);
+        setupFeaturedProduct(R.id.cardProduct3, "Xiaomi 14", "19.990.000đ", R.drawable.xiaomi14);
+        setupFeaturedProduct(R.id.cardProduct4, "Oppo Find X7", "18.500.000đ", R.drawable.oppofindx7);
     }
 
-    private void setupProductClicks() {
-        int[] ids = {R.id.cardProduct1, R.id.cardProduct2, R.id.cardProduct3, R.id.cardProduct4};
-        for (int id : ids) {
-            View card = findViewById(id);
-            if (card != null) {
-                card.setOnClickListener(v -> startActivity(new Intent(this, DetailActivity.class)));
-            }
+    private void setupFeaturedProduct(int cardId, String name, String price, int imageRes) {
+        View card = findViewById(cardId);
+        if (card != null) {
+            card.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, DetailActivity.class);
+                intent.putExtra("PRODUCT_NAME", name);
+                intent.putExtra("PRODUCT_PRICE", price);
+                intent.putExtra("PRODUCT_IMAGE", imageRes);
+                startActivity(intent);
+            });
         }
     }
 

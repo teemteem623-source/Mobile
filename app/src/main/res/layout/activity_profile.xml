@@ -36,8 +36,8 @@
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
                 android:text="Thông tin cá nhân"
-                android:textColor="#1E293B"
-                android:textSize="18sp"
+                android:textColor="#000000"
+                android:textSize="20sp"
                 android:textStyle="bold" />
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
@@ -45,8 +45,9 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/topBarCard"
-        app:layout_constraintBottom_toTopOf="@id/btnUpdate">
+        app:layout_constraintBottom_toTopOf="@id/btnUpdateProfile">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -54,7 +55,7 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- Avatar placeholder -->
+            <!-- Avatar -->
             <ImageView
                 android:layout_width="100dp"
                 android:layout_height="100dp"
@@ -71,14 +72,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Họ và tên"
-                app:boxStrokeColor="#1E40AF"
-                app:hintTextColor="#1E40AF">
+                app:boxStrokeColor="#000000"
+                app:hintTextColor="#000000">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfileName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textPersonName"
-                    android:textColor="#1E293B"
+                    android:textColor="#000000"
+                    android:textStyle="bold"
                     android:text="Người dùng TT SHOP" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -89,14 +91,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Số điện thoại"
-                app:boxStrokeColor="#1E40AF"
-                app:hintTextColor="#1E40AF">
+                app:boxStrokeColor="#000000"
+                app:hintTextColor="#000000">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfilePhone"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="phone"
-                    android:textColor="#1E293B"
+                    android:textColor="#000000"
+                    android:textStyle="bold"
                     android:text="0901234567" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -107,18 +110,19 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Email"
-                app:boxStrokeColor="#1E40AF"
-                app:hintTextColor="#1E40AF">
+                app:boxStrokeColor="#000000"
+                app:hintTextColor="#000000">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfileEmail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textEmailAddress"
-                    android:textColor="#1E293B"
+                    android:textColor="#000000"
+                    android:textStyle="bold"
                     android:text="user@ttshop.com" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Mật khẩu (Khóa - không cho sửa/xem) -->
+            <!-- Mật khẩu (Chỉ xem - Bị khóa) -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
@@ -137,17 +141,20 @@
                     android:text="********" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Nút đổi mật khẩu (Theo yêu cầu nhưng có thể chỉ là label) -->
+            <!-- Nút đổi mật khẩu -->
             <TextView
                 android:id="@+id/tvChangePassword"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:layout_gravity="end"
-                android:text="Đổi mật khẩu"
-                android:textColor="#94A3B8"
+                android:text="Đổi mật khẩu?"
+                android:textColor="#1E40AF"
+                android:textStyle="bold"
                 android:textSize="14sp"
-                android:padding="4dp" />
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true" />
 
         </LinearLayout>
     </ScrollView>
@@ -156,10 +163,11 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnUpdateProfile"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="60dp"
         android:layout_margin="16dp"
         android:text="CẬP NHẬT THÔNG TIN"
         android:textStyle="bold"
+        android:textSize="16sp"
         app:cornerRadius="12dp"
         app:backgroundTint="#1E40AF"
         app:layout_constraintBottom_toBottomOf="parent" />

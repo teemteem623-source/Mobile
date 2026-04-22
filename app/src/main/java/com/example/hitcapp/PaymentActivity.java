@@ -22,13 +22,13 @@ public class PaymentActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_ADDRESS = 102;
 
     private int quantity = 1;
-    private long unitPrice = 34990000;
+    private long unitPrice = 28990000; // iPhone 15 Pro Price
     private long shippingFee = 30000;
     private long shippingDiscount = 30000;
     private long voucherDiscount = 0;
     private String selectedVoucherName = "";
 
-    private TextView tvQuantity, tvSubtotal, tvDiscount, tvShipping, tvShippingDiscount, tvTotalPrice, tvFinalTotal, tvTotalItems, tvSelectedVoucherName, tvDisplayAddress;
+    private TextView tvQuantity, tvSubtotal, tvDiscount, tvShipping, tvTotalPrice, tvFinalTotal, tvTotalItems, tvSelectedVoucherName, tvDisplayAddress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,12 +48,12 @@ public class PaymentActivity extends AppCompatActivity {
 
         // --- ÁNH XẠ ---
         tvQuantity = findViewById(R.id.tvQuantity);
-        tvSubtotal = findViewById(R.id.tvSubtotal);
-        tvDiscount = findViewById(R.id.tvDiscount);
-        tvShipping = findViewById(R.id.tvShipping);
-        tvShippingDiscount = findViewById(R.id.tvShippingDiscount);
-        tvTotalPrice = findViewById(R.id.tvTotalPrice);
-        tvFinalTotal = findViewById(R.id.tvFinalTotal);
+        tvSubtotal = findViewById(R.id.tvSubtotal); // Tổng tiền hàng
+        tvDiscount = findViewById(R.id.tvDiscount); // Giảm giá voucher
+        tvShipping = findViewById(R.id.tvShipping); // Phí vận chuyển
+        tvTotalPrice = findViewById(R.id.tvTotalPrice); // Tổng thanh toán (Bottom bar)
+        tvFinalTotal = findViewById(R.id.tvFinalTotal); // Tổng thanh toán (Chi tiết)
+        
         tvTotalItems = findViewById(R.id.tvTotalItems);
         tvSelectedVoucherName = findViewById(R.id.tvSelectedVoucherName);
         tvDisplayAddress = findViewById(R.id.tvDisplayAddress);
@@ -89,12 +89,8 @@ public class PaymentActivity extends AppCompatActivity {
 
         // --- ĐẶT HÀNG ---
         findViewById(R.id.btnOrder).setOnClickListener(v -> {
-            // Thông báo thành công
             Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_LONG).show();
-            
-            // Chuyển tới trang Đơn hàng của tôi (OderActivity)
             Intent intent = new Intent(PaymentActivity.this, OderActivity.class);
-            // Xóa các activity trước đó để tránh quay lại trang thanh toán
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             finish();
@@ -113,7 +109,7 @@ public class PaymentActivity extends AppCompatActivity {
                 
                 if (tvSelectedVoucherName != null) {
                     tvSelectedVoucherName.setText(selectedVoucherName != null ? selectedVoucherName : "Chọn mã giảm giá >");
-                    tvSelectedVoucherName.setTextColor(0xFF059669); // Green
+                    tvSelectedVoucherName.setTextColor(0xFF059669); 
                 }
                 updateUI();
             } else if (requestCode == REQUEST_CODE_ADDRESS) {
@@ -127,15 +123,19 @@ public class PaymentActivity extends AppCompatActivity {
 
     private void updateUI() {
         long totalProductPrice = unitPrice * quantity;
+        // Tổng cuối = Tiền hàng + Phí ship - Giảm giá ship (đã free) - Giảm giá voucher
         long finalAmount = totalProductPrice + shippingFee - shippingDiscount - voucherDiscount;
 
         if (tvQuantity != null) tvQuantity.setText(String.valueOf(quantity));
+        
+        // Cập nhật các ID bạn yêu cầu
         if (tvSubtotal != null) tvSubtotal.setText(formatMoney(totalProductPrice));
         if (tvDiscount != null) tvDiscount.setText("-" + formatMoney(voucherDiscount));
         if (tvShipping != null) tvShipping.setText(formatMoney(shippingFee));
-        if (tvShippingDiscount != null) tvShippingDiscount.setText("-" + formatMoney(shippingDiscount));
-        if (tvTotalPrice != null) tvTotalPrice.setText(formatMoney(finalAmount));
         if (tvFinalTotal != null) tvFinalTotal.setText(formatMoney(finalAmount));
+        
+        // Bottom bar
+        if (tvTotalPrice != null) tvTotalPrice.setText(formatMoney(finalAmount));
         if (tvTotalItems != null) {
             tvTotalItems.setText(String.format(Locale.getDefault(), "Tổng (%d mặt hàng)", quantity));
         }

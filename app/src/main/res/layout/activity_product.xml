@@ -9,68 +9,93 @@
     android:background="#FFFFFF"
     tools:context=".ProductActivity">
 
-    <!-- ===== TOP BAR (Header) ===== -->
+    <!-- ===== TOP BAR (Header Section) ===== -->
     <androidx.cardview.widget.CardView
         android:id="@+id/topBarCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardElevation="4dp"
+        app:cardElevation="0dp"
         app:cardBackgroundColor="#FFFFFF"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="70dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
+            android:layout_height="wrap_content"
+            android:paddingTop="20dp"
+            android:paddingBottom="10dp"
             android:paddingHorizontal="16dp">
+
+            <TextView
+                android:id="@+id/tvLogo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="TT"
+                android:textColor="#1E40AF"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="TT"
-                android:textColor="#1E40AF"
-                android:textSize="28sp"
+                android:layout_centerInParent="true"
+                android:text="Sản phẩm"
+                android:textColor="#1E293B"
+                android:textSize="20sp"
                 android:textStyle="bold" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:layout_weight="1"
-                app:hintEnabled="false"
-                app:startIconDrawable="@android:drawable/ic_menu_search"
-                app:startIconTint="#64748B"
-                app:boxCornerRadiusBottomEnd="25dp"
-                app:boxCornerRadiusBottomStart="25dp"
-                app:boxCornerRadiusTopEnd="25dp"
-                app:boxCornerRadiusTopStart="25dp"
-                app:boxStrokeWidth="0dp"
-                app:boxBackgroundColor="#F1F5F9"
-                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/edtSearch"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:hint="Tìm kiếm sản phẩm..."
-                    android:padding="0dp"
-                    android:textSize="14sp"
-                    android:textColor="#1E293B"
-                    android:background="@android:color/transparent" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <ImageView
-                android:id="@+id/imgCart"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:contentDescription="Giỏ hàng"
-                android:src="@android:drawable/ic_input_add"
-                android:padding="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                app:tint="#1E40AF" />
-        </LinearLayout>
+        </RelativeLayout>
     </androidx.cardview.widget.CardView>
+
+    <!-- ===== SEARCH & CART BAR (Riêng biệt) ===== -->
+    <LinearLayout
+        android:id="@+id/searchBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        app:layout_constraintTop_toBottomOf="@id/topBarCard">
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:boxBackgroundColor="#F1F5F9"
+            app:boxCornerRadiusBottomEnd="25dp"
+            app:boxCornerRadiusBottomStart="25dp"
+            app:boxCornerRadiusTopEnd="25dp"
+            app:boxCornerRadiusTopStart="25dp"
+            app:boxStrokeWidth="0dp"
+            app:hintEnabled="false"
+            app:startIconDrawable="@android:drawable/ic_menu_search"
+            app:startIconTint="#64748B">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtSearch"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:hint="Tìm kiếm sản phẩm..."
+                android:padding="0dp"
+                android:textColor="#1E293B"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <ImageView
+            android:id="@+id/imgCart"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_top_curve"
+            android:backgroundTint="#F1F5F9"
+            android:contentDescription="Giỏ hàng"
+            android:padding="10dp"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="#1E40AF" />
+    </LinearLayout>
 
     <!-- ===== CONTENT ===== -->
     <androidx.core.widget.NestedScrollView
@@ -78,7 +103,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/topBarCard"
+        app:layout_constraintTop_toBottomOf="@id/searchBarLayout"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
 
         <LinearLayout
@@ -194,8 +219,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
-        android:translationY="12dp"
-        app:elevation="4dp"
+        app:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:menu="@menu/bottom_nav_menu"
         app:itemIconTint="@color/nav_item_color"

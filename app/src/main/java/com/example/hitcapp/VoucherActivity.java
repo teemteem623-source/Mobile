@@ -132,7 +132,6 @@ public class VoucherActivity extends AppCompatActivity {
             ImageView imgIcon;
             View layoutIcon;
             ViewHolder(View v) { super(v);
-                // Sửa lại ID cho khớp với item_voucher.xml
                 tvTitle = v.findViewById(R.id.tvVoucherTitle);
                 tvDesc = v.findViewById(R.id.tvVoucherDesc);
                 imgIcon = v.findViewById(R.id.imgVoucherIcon);

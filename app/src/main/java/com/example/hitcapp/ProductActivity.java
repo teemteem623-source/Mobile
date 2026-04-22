@@ -58,8 +58,14 @@ public class ProductActivity extends AppCompatActivity {
         tvCategoryTitle = findViewById(R.id.tvCategoryTitle);
         rvProducts = findViewById(R.id.rvProducts);
         rvProducts.setLayoutManager(new GridLayoutManager(this, 2));
+        
+        // Cập nhật: Truyền dữ liệu khi nhấn vào sản phẩm
         adapter = new ProductAdapter(new ArrayList<>(fullProductList), item -> {
-            startActivity(new Intent(this, DetailActivity.class));
+            Intent intent = new Intent(ProductActivity.this, DetailActivity.class);
+            intent.putExtra("PRODUCT_NAME", item.name);
+            intent.putExtra("PRODUCT_PRICE", item.price);
+            intent.putExtra("PRODUCT_IMAGE", item.imageRes);
+            startActivity(intent);
         });
         rvProducts.setAdapter(adapter);
 
@@ -95,14 +101,14 @@ public class ProductActivity extends AppCompatActivity {
     }
 
     private void initData() {
-        fullProductList.add(new ProductItem("iPhone 15 Pro", "28.990.000đ", "iPhone"));
-        fullProductList.add(new ProductItem("iPhone 14", "16.490.000đ", "iPhone"));
-        fullProductList.add(new ProductItem("Samsung S24", "25.490.000đ", "Samsung"));
-        fullProductList.add(new ProductItem("Samsung A54", "8.990.000đ", "Samsung"));
-        fullProductList.add(new ProductItem("Xiaomi 14", "19.990.000đ", "Xiaomi"));
-        fullProductList.add(new ProductItem("Xiaomi Redmi Note 13", "5.490.000đ", "Xiaomi"));
-        fullProductList.add(new ProductItem("Oppo Find X7", "18.500.000đ", "Oppo"));
-        fullProductList.add(new ProductItem("Oppo Reno 11", "10.990.000đ", "Oppo"));
+        fullProductList.add(new ProductItem("iPhone 15 Pro", "28.990.000đ", "iPhone", R.drawable.iphone15pro));
+        fullProductList.add(new ProductItem("iPhone 14", "16.490.000đ", "iPhone", R.drawable.iphone14));
+        fullProductList.add(new ProductItem("Samsung S24", "25.490.000đ", "Samsung", R.drawable.samsungs24));
+        fullProductList.add(new ProductItem("Samsung A54", "8.990.000đ", "Samsung", R.drawable.samsunga54));
+        fullProductList.add(new ProductItem("Xiaomi 14", "19.990.000đ", "Xiaomi", R.drawable.xiaomi14));
+        fullProductList.add(new ProductItem("Xiaomi Redmi Note 13", "5.490.000đ", "Xiaomi", R.drawable.xiaomiredminote13));
+        fullProductList.add(new ProductItem("Oppo Find X7", "18.500.000đ", "Oppo", R.drawable.oppofindx7));
+        fullProductList.add(new ProductItem("Oppo Reno 11", "10.990.000đ", "Oppo", R.drawable.opporeno11));
     }
 
     private void filterProducts(String category) {
@@ -148,7 +154,13 @@ public class ProductActivity extends AppCompatActivity {
     // --- ADAPTER & MODEL ---
     private static class ProductItem {
         String name, price, category;
-        ProductItem(String n, String p, String c) { this.name = n; this.price = p; this.category = c; }
+        int imageRes;
+        ProductItem(String n, String p, String c, int img) { 
+            this.name = n; 
+            this.price = p; 
+            this.category = c; 
+            this.imageRes = img;
+        }
     }
 
     private static class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHolder> {
@@ -177,6 +189,7 @@ public class ProductActivity extends AppCompatActivity {
             ProductItem item = list.get(position);
             holder.tvName.setText(item.name);
             holder.tvPrice.setText(item.price);
+            holder.imgProduct.setImageResource(item.imageRes);
             holder.itemView.setOnClickListener(v -> listener.onItemClick(item));
         }
 
@@ -184,10 +197,12 @@ public class ProductActivity extends AppCompatActivity {
 
         static class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvName, tvPrice;
+            ImageView imgProduct;
             ViewHolder(View v) {
                 super(v);
                 tvName = v.findViewById(R.id.tvProductName);
                 tvPrice = v.findViewById(R.id.tvProductPrice);
+                imgProduct = v.findViewById(R.id.imgProduct);
             }
         }
     }

@@ -70,14 +70,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ===== EMAIL INPUT (Khung & Chữ siêu đậm) ===== -->
+    <!-- ===== IDENTITY INPUT (User hoặc Email) ===== -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilEmail"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="320dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:hint="Email"
+        android:hint="User hoặc Email"
         app:boxCornerRadiusBottomEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusTopEnd="12dp"
