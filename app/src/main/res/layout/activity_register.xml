@@ -82,11 +82,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:hint="Tên người dùng"
+                android:textColorHint="#444444"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxStrokeColor="#1E40AF"
+                app:hintTextColor="#1E40AF"
                 app:startIconDrawable="@android:drawable/ic_menu_edit"
                 app:layout_constraintTop_toBottomOf="@id/txtTitle"
                 app:layout_constraintStart_toStartOf="parent"
@@ -95,7 +97,9 @@
                     android:id="@+id/edtUsername"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPersonName" />
+                    android:inputType="textPersonName"
+                    android:textStyle="bold"
+                    android:textColor="#000000" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -105,11 +109,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Email"
+                android:textColorHint="#444444"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxStrokeColor="#1E40AF"
+                app:hintTextColor="#1E40AF"
                 app:startIconDrawable="@android:drawable/ic_dialog_email"
                 app:layout_constraintTop_toBottomOf="@id/tilUsername"
                 app:layout_constraintStart_toStartOf="parent"
@@ -118,7 +124,9 @@
                     android:id="@+id/edtEmail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textEmailAddress" />
+                    android:inputType="textEmailAddress"
+                    android:textStyle="bold"
+                    android:textColor="#000000" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -128,12 +136,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Mật khẩu"
+                android:textColorHint="#444444"
                 app:passwordToggleEnabled="true"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxStrokeColor="#1E40AF"
+                app:hintTextColor="#1E40AF"
                 app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
                 app:layout_constraintTop_toBottomOf="@id/tilEmail"
                 app:layout_constraintStart_toStartOf="parent"
@@ -142,7 +152,9 @@
                     android:id="@+id/edtPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPassword" />
+                    android:inputType="textPassword"
+                    android:textStyle="bold"
+                    android:textColor="#000000" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -152,12 +164,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Xác nhận mật khẩu"
+                android:textColorHint="#444444"
                 app:passwordToggleEnabled="true"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxStrokeColor="#1E40AF"
+                app:hintTextColor="#1E40AF"
                 app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
                 app:layout_constraintTop_toBottomOf="@id/tilPassword"
                 app:layout_constraintStart_toStartOf="parent"
@@ -166,7 +180,9 @@
                     android:id="@+id/edtConfirmPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPassword" />
+                    android:inputType="textPassword"
+                    android:textStyle="bold"
+                    android:textColor="#000000" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <CheckBox

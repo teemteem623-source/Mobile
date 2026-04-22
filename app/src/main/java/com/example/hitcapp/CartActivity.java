@@ -84,8 +84,32 @@ public class CartActivity extends AppCompatActivity {
         View relatedContainer = findViewById(R.id.gridRelated);
         if (relatedContainer instanceof android.widget.GridLayout) {
             android.widget.GridLayout grid = (android.widget.GridLayout) relatedContainer;
-            for (int i = 0; i < grid.getChildCount(); i++) {
-                grid.getChildAt(i).setOnClickListener(v -> startActivity(new Intent(CartActivity.this, DetailActivity.class)));
+            
+            // Dữ liệu mẫu cho sản phẩm liên quan
+            int[] relatedImages = {R.drawable.iphone14, R.drawable.samsunga54, R.drawable.xiaomi14, R.drawable.oppofindx7};
+            String[] relatedNames = {"iPhone 14", "Samsung A54", "Xiaomi 14", "Oppo Find X7"};
+            String[] relatedPrices = {"16.490.000đ", "8.990.000đ", "19.990.000đ", "18.500.000đ"};
+
+            for (int i = 0; i < grid.getChildCount() && i < relatedImages.length; i++) {
+                View child = grid.getChildAt(i);
+                
+                // Gắn hình ảnh và dữ liệu vào item_related_small
+                ImageView img = child.findViewById(R.id.imgRelated);
+                TextView tvName = child.findViewById(R.id.tvRelatedName);
+                TextView tvPrice = child.findViewById(R.id.tvRelatedPrice);
+                
+                if (img != null) img.setImageResource(relatedImages[i]);
+                if (tvName != null) tvName.setText(relatedNames[i]);
+                if (tvPrice != null) tvPrice.setText(relatedPrices[i]);
+
+                final int index = i;
+                child.setOnClickListener(v -> {
+                    Intent intent = new Intent(CartActivity.this, DetailActivity.class);
+                    intent.putExtra("PRODUCT_NAME", relatedNames[index]);
+                    intent.putExtra("PRODUCT_PRICE", relatedPrices[index]);
+                    intent.putExtra("PRODUCT_IMAGE", relatedImages[index]);
+                    startActivity(intent);
+                });
             }
         }
     }
@@ -107,12 +131,23 @@ public class CartActivity extends AppCompatActivity {
         @Override public View getView(int pos, View convertView, ViewGroup parent) {
             if (convertView == null) convertView = LayoutInflater.from(CartActivity.this).inflate(R.layout.item_cart, parent, false);
             CartItem item = cartItemList.get(pos);
+            
             ((CheckBox)convertView.findViewById(R.id.chkItem)).setChecked(item.isSelected);
             ((ImageView)convertView.findViewById(R.id.imgProduct)).setImageResource(item.imageRes);
             ((TextView)convertView.findViewById(R.id.tvProductName)).setText(item.name);
             ((TextView)convertView.findViewById(R.id.tvProductDetail)).setText(item.detail);
             ((TextView)convertView.findViewById(R.id.tvProductPrice)).setText(String.format(Locale.getDefault(), "%,dđ", item.price));
             ((TextView)convertView.findViewById(R.id.tvQuantity)).setText(String.valueOf(item.quantity));
+            
+            // Gắn link cho sản phẩm trong giỏ hàng để quay lại Detail
+            convertView.setOnClickListener(v -> {
+                Intent intent = new Intent(CartActivity.this, DetailActivity.class);
+                intent.putExtra("PRODUCT_NAME", item.name);
+                intent.putExtra("PRODUCT_PRICE", String.format(Locale.getDefault(), "%,dđ", item.price));
+                intent.putExtra("PRODUCT_IMAGE", item.imageRes);
+                startActivity(intent);
+            });
+
             return convertView;
         }
     }

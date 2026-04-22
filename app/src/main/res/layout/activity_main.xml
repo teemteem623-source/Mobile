@@ -56,7 +56,7 @@
         </RelativeLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- ===== TITLE (Xanh đậm & Nổi bật hơn) ===== -->
+    <!-- ===== TITLE ===== -->
     <TextView
         android:id="@+id/txtTitle"
         android:layout_width="wrap_content"
@@ -78,13 +78,14 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:hint="User hoặc Email"
+        android:textColorHint="#444444"
         app:boxCornerRadiusBottomEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusTopEnd="12dp"
         app:boxCornerRadiusTopStart="12dp"
         app:boxStrokeColor="#1E40AF"
-        app:boxStrokeWidth="2.5dp"
-        app:hintTextColor="#000000"
+        app:boxStrokeWidth="2dp"
+        app:hintTextColor="#1E40AF"
         app:startIconDrawable="@android:drawable/ic_dialog_email"
         app:startIconTint="#1E40AF"
         app:layout_constraintTop_toBottomOf="@id/txtTitle"
@@ -101,7 +102,7 @@
             android:textSize="16sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- ===== PASSWORD INPUT (Khung & Chữ siêu đậm) ===== -->
+    <!-- ===== PASSWORD INPUT ===== -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilPassword"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -109,14 +110,15 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:hint="Mật khẩu"
+        android:textColorHint="#444444"
         app:passwordToggleEnabled="true"
         app:boxCornerRadiusBottomEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusTopEnd="12dp"
         app:boxCornerRadiusTopStart="12dp"
         app:boxStrokeColor="#1E40AF"
-        app:boxStrokeWidth="2.5dp"
-        app:hintTextColor="#000000"
+        app:boxStrokeWidth="2dp"
+        app:hintTextColor="#1E40AF"
         app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
         app:startIconTint="#1E40AF"
         app:layout_constraintTop_toBottomOf="@id/tilEmail"
@@ -133,7 +135,7 @@
             android:textSize="16sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- ===== CHECKBOX + FORGOT (Đậm tuyệt đối) ===== -->
+    <!-- ===== CHECKBOX + FORGOT ===== -->
     <CheckBox
         android:id="@+id/chkRemember"
         android:layout_width="wrap_content"
@@ -157,7 +159,7 @@
         app:layout_constraintBottom_toBottomOf="@id/chkRemember"
         app:layout_constraintEnd_toEndOf="@id/tilPassword" />
 
-    <!-- ===== LOGIN BUTTON (To & Siêu Đậm) ===== -->
+    <!-- ===== LOGIN BUTTON ===== -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnLogin"
         android:layout_width="320dp"
@@ -173,7 +175,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ===== OR LOGIN (Thu hẹp khoảng cách) ===== -->
+    <!-- ===== OR LOGIN ===== -->
     <LinearLayout
         android:id="@+id/layoutOr"
         android:layout_width="wrap_content"
@@ -195,7 +197,7 @@
         <View android:layout_width="80dp" android:layout_height="1dp" android:background="#CBD5E1"/>
     </LinearLayout>
 
-    <!-- ===== SOCIAL ICONS (Thu hẹp khoảng cách) ===== -->
+    <!-- ===== SOCIAL ICONS ===== -->
     <LinearLayout
         android:id="@+id/layoutSocial"
         android:layout_width="wrap_content"
@@ -224,7 +226,7 @@
             android:contentDescription="Google" />
     </LinearLayout>
 
-    <!-- ===== REGISTER (Đẩy lên cao hơn) ===== -->
+    <!-- ===== REGISTER ===== -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

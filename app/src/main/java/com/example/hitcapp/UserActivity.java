@@ -24,7 +24,7 @@ public class UserActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_user);
 
-        // Xử lý Safe Area (Insets)
+        // --- XỬ LÝ SAFE AREA ---
         View mainView = findViewById(R.id.main);
         View topBar = findViewById(R.id.topBarCard);
         bottomNavigation = findViewById(R.id.bottomNavigation);
@@ -32,61 +32,60 @@ public class UserActivity extends AppCompatActivity {
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                if (topBar != null) topBar.setPadding(0, systemBars.top, 0, 0);
-                if (bottomNavigation != null) bottomNavigation.setPadding(0, 0, 0, systemBars.bottom);
-                return insets;
+                if (topBar != null) {
+                    topBar.setPadding(0, systemBars.top + (int)(20 * getResources().getDisplayMetrics().density), 0, 10);
+                }
+                if (bottomNavigation != null) {
+                    bottomNavigation.setPadding(0, 0, 0, systemBars.bottom);
+                }
+                return WindowInsetsCompat.CONSUMED;
             });
         }
 
-        // --- GẮN LINK THÔNG TIN CÁ NHÂN (menuProfile) ---
-        LinearLayout menuProfile = findViewById(R.id.menuProfile);
-        if (menuProfile != null) {
-            menuProfile.setOnClickListener(v -> {
-                Intent intent = new Intent(UserActivity.this, ProfileActivity.class);
-                startActivity(intent);
-            });
-        }
+        // --- GẮN LINK MENU ---
+        setupMenuLinks();
 
-        // --- GẮN LINK ĐƠN HÀNG CỦA TÔI (menuOrders) ---
-        LinearLayout menuOrders = findViewById(R.id.menuOrders);
-        if (menuOrders != null) {
-            menuOrders.setOnClickListener(v -> {
-                Intent intent = new Intent(UserActivity.this, OderActivity.class);
-                startActivity(intent);
-            });
-        }
-
-        // --- GẮN LINK THÊM TÀI KHOẢN (menuAddAccount) ---
-        LinearLayout menuAddAccount = findViewById(R.id.menuAddAccount);
-        if (menuAddAccount != null) {
-            menuAddAccount.setOnClickListener(v -> {
-                Intent intent = new Intent(UserActivity.this, AddUserActivity.class);
-                startActivity(intent);
-            });
-        }
-
-        // --- XỬ LÝ CÁC NÚT TRÊN TOP BAR ---
+        // --- TOP BAR BUTTONS ---
         findViewById(R.id.imgWallet).setOnClickListener(v -> 
-            Toast.makeText(this, "Mở Ví tiền của bạn", Toast.LENGTH_SHORT).show());
+            Toast.makeText(this, "Tính năng ví đang phát triển", Toast.LENGTH_SHORT).show());
             
         findViewById(R.id.imgSettings).setOnClickListener(v -> 
-            Toast.makeText(this, "Cài đặt hệ thống", Toast.LENGTH_SHORT).show());
-
-        // --- XỬ LÝ ĐĂNG XUẤT ---
-        findViewById(R.id.menuLogout).setOnClickListener(v -> {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-        });
+            Toast.makeText(this, "Cài đặt chung", Toast.LENGTH_SHORT).show());
 
         // --- THANH ĐIỀU HƯỚNG DƯỚI ---
         setupBottomNavigation();
     }
 
+    private void setupMenuLinks() {
+        View menuProfile = findViewById(R.id.menuProfile);
+        if (menuProfile != null) {
+            menuProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
+        }
+
+        View menuOrders = findViewById(R.id.menuOrders);
+        if (menuOrders != null) {
+            menuOrders.setOnClickListener(v -> startActivity(new Intent(this, OderActivity.class)));
+        }
+
+        View menuAddAccount = findViewById(R.id.menuAddAccount);
+        if (menuAddAccount != null) {
+            menuAddAccount.setOnClickListener(v -> startActivity(new Intent(this, AddUserActivity.class)));
+        }
+
+        View menuLogout = findViewById(R.id.menuLogout);
+        if (menuLogout != null) {
+            menuLogout.setOnClickListener(v -> {
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
+    }
+
     private void setupBottomNavigation() {
         if (bottomNavigation != null) {
-            bottomNavigation.setSelectedItemId(R.id.nav_profile); // Đánh dấu đang ở mục Hồ sơ
+            bottomNavigation.setSelectedItemId(R.id.nav_profile);
             bottomNavigation.setOnItemSelectedListener(item -> {
                 int itemId = item.getItemId();
                 if (itemId == R.id.nav_home) {
@@ -99,7 +98,7 @@ public class UserActivity extends AppCompatActivity {
                     startActivity(new Intent(this, NoticeActivity.class));
                     finish(); return true;
                 } else if (itemId == R.id.nav_profile) {
-                    return true; // Đang ở đây rồi
+                    return true;
                 }
                 return false;
             });

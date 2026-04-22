@@ -47,7 +47,7 @@
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- ===== SEARCH & CART BAR (Riêng biệt) ===== -->
+    <!-- ===== SEARCH & CART BAR (Tách biệt khỏi Header) ===== -->
     <LinearLayout
         android:id="@+id/searchBarLayout"
         android:layout_width="match_parent"
@@ -59,6 +59,7 @@
         app:layout_constraintTop_toBottomOf="@id/topBarCard">
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSearch"
             style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -71,7 +72,10 @@
             app:boxStrokeWidth="0dp"
             app:hintEnabled="false"
             app:startIconDrawable="@android:drawable/ic_menu_search"
-            app:startIconTint="#64748B">
+            app:startIconTint="#64748B"
+            app:endIconMode="custom"
+            app:endIconDrawable="@android:drawable/ic_menu_send"
+            app:endIconTint="#1E40AF">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtSearch"
@@ -81,7 +85,9 @@
                 android:hint="Tìm kiếm sản phẩm..."
                 android:padding="0dp"
                 android:textColor="#1E293B"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:imeOptions="actionSearch"
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <ImageView
@@ -200,7 +206,6 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
-            <!-- Sử dụng RecyclerView để lọc dễ dàng hơn -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvProducts"
                 android:layout_width="match_parent"
@@ -224,6 +229,7 @@
         app:menu="@menu/bottom_nav_menu"
         app:itemIconTint="@color/nav_item_color"
         app:itemTextColor="@color/nav_item_color"
-        app:labelVisibilityMode="labeled" />
+        app:itemActiveIndicatorStyle="@style/App.Custom.Indicator"
+        app:labelVisibilityMode="selected" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

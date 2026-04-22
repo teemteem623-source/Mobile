@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -19,6 +20,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,15 +47,37 @@ public class HomeActivity extends AppCompatActivity {
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                // Header: Status bar + 20dp cho đẹp
                 if (topBar != null) {
-                    topBar.setPadding(0, systemBars.top + (int)(20 * getResources().getDisplayMetrics().density), 0, 0);
+                    topBar.setPadding(0, systemBars.top + (int)(20 * getResources().getDisplayMetrics().density), 0, 10);
                 }
-                // Bottom Nav: Luôn dính sát phím điều hướng hệ thống (systemBars.bottom)
                 if (bottomNavigation != null) {
                     bottomNavigation.setPadding(0, 0, 0, systemBars.bottom);
                 }
                 return WindowInsetsCompat.CONSUMED;
+            });
+        }
+
+        // --- XỬ LÝ TÌM KIẾM TỪ TRANG CHỦ ---
+        TextInputLayout tilSearch = findViewById(R.id.tilSearch);
+        TextInputEditText edtSearch = findViewById(R.id.edtSearch);
+        
+        if (edtSearch != null) {
+            // Xử lý khi nhấn nút Search trên bàn phím ảo
+            edtSearch.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    performSearch(edtSearch.getText().toString());
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        if (tilSearch != null) {
+            // Xử lý khi nhấn vào icon Tìm kiếm ở cuối khung nhập
+            tilSearch.setEndIconOnClickListener(v -> {
+                if (edtSearch != null) {
+                    performSearch(edtSearch.getText().toString());
+                }
             });
         }
 
@@ -106,6 +131,12 @@ public class HomeActivity extends AppCompatActivity {
         setupFeaturedProduct(R.id.cardProduct2, "Samsung S24", "25.490.000đ", R.drawable.samsungs24);
         setupFeaturedProduct(R.id.cardProduct3, "Xiaomi 14", "19.990.000đ", R.drawable.xiaomi14);
         setupFeaturedProduct(R.id.cardProduct4, "Oppo Find X7", "18.500.000đ", R.drawable.oppofindx7);
+    }
+
+    private void performSearch(String query) {
+        Intent intent = new Intent(HomeActivity.this, ProductActivity.class);
+        intent.putExtra("SEARCH_QUERY", query.trim());
+        startActivity(intent);
     }
 
     private void setupFeaturedProduct(int cardId, String name, String price, int imageRes) {

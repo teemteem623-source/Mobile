@@ -2,9 +2,12 @@ package com.example.hitcapp;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,6 +23,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +36,8 @@ public class ProductActivity extends AppCompatActivity {
     private ProductAdapter adapter;
     private List<ProductItem> fullProductList = new ArrayList<>();
     private TextView tvCategoryTitle;
+    private String currentCategory = "";
+    private String currentQuery = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,9 +53,13 @@ public class ProductActivity extends AppCompatActivity {
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                if (topBar != null) topBar.setPadding(0, systemBars.top, 0, 0);
-                if (bottomNavigation != null) bottomNavigation.setPadding(0, 0, 0, systemBars.bottom);
-                return insets;
+                if (topBar != null) {
+                    topBar.setPadding(0, systemBars.top + (int)(20 * getResources().getDisplayMetrics().density), 0, 10);
+                }
+                if (bottomNavigation != null) {
+                    bottomNavigation.setPadding(0, 0, 0, systemBars.bottom);
+                }
+                return WindowInsetsCompat.CONSUMED;
             });
         }
 
@@ -59,7 +70,6 @@ public class ProductActivity extends AppCompatActivity {
         rvProducts = findViewById(R.id.rvProducts);
         rvProducts.setLayoutManager(new GridLayoutManager(this, 2));
         
-        // Cập nhật: Truyền dữ liệu khi nhấn vào sản phẩm
         adapter = new ProductAdapter(new ArrayList<>(fullProductList), item -> {
             Intent intent = new Intent(ProductActivity.this, DetailActivity.class);
             intent.putExtra("PRODUCT_NAME", item.name);
@@ -69,34 +79,68 @@ public class ProductActivity extends AppCompatActivity {
         });
         rvProducts.setAdapter(adapter);
 
+        // --- XỬ LÝ TÌM KIẾM ---
+        TextInputLayout tilSearch = findViewById(R.id.tilSearch);
+        TextInputEditText edtSearch = findViewById(R.id.edtSearch);
+        
+        // Nhận dữ liệu từ trang Home gửi qua
+        String queryFromHome = getIntent().getStringExtra("SEARCH_QUERY");
+        if (queryFromHome != null && !queryFromHome.isEmpty()) {
+            edtSearch.setText(queryFromHome);
+            currentQuery = queryFromHome.toLowerCase().trim();
+            applyFilters();
+        }
+
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentQuery = s.toString().toLowerCase().trim();
+                applyFilters();
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
+        // Xử lý khi nhấn nút Search trên bàn phím
+        edtSearch.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                applyFilters();
+                return true;
+            }
+            return false;
+        });
+
+        // Xử lý khi nhấn vào nút tìm kiếm ở cuối khung (End Icon)
+        if (tilSearch != null) {
+            tilSearch.setEndIconOnClickListener(v -> applyFilters());
+        }
+
         // --- XỬ LÝ LỌC DANH MỤC ---
         ChipGroup chipGroup = findViewById(R.id.chipGroupProduct);
         chipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (checkedIds.isEmpty()) return;
             
             int checkedId = checkedIds.get(0);
-            String category = "";
+            currentCategory = "";
             String title = "Tất cả sản phẩm";
 
             if (checkedId == R.id.chipIphone) {
-                category = "iPhone";
+                currentCategory = "iPhone";
                 title = "Điện thoại iPhone";
             } else if (checkedId == R.id.chipSamsung) {
-                category = "Samsung";
+                currentCategory = "Samsung";
                 title = "Điện thoại Samsung";
             } else if (checkedId == R.id.chipXiaomi) {
-                category = "Xiaomi";
+                currentCategory = "Xiaomi";
                 title = "Điện thoại Xiaomi";
             } else if (checkedId == R.id.chipOppo) {
-                category = "Oppo";
+                currentCategory = "Oppo";
                 title = "Điện thoại Oppo";
             }
 
             tvCategoryTitle.setText(title);
-            filterProducts(category);
+            applyFilters();
         });
 
-        // --- NAVIGATION & CART ---
         setupNavigation();
     }
 
@@ -111,15 +155,14 @@ public class ProductActivity extends AppCompatActivity {
         fullProductList.add(new ProductItem("Oppo Reno 11", "10.990.000đ", "Oppo", R.drawable.opporeno11));
     }
 
-    private void filterProducts(String category) {
+    private void applyFilters() {
         List<ProductItem> filtered = new ArrayList<>();
-        if (category.isEmpty()) {
-            filtered.addAll(fullProductList);
-        } else {
-            for (ProductItem item : fullProductList) {
-                if (item.category.equals(category)) {
-                    filtered.add(item);
-                }
+        for (ProductItem item : fullProductList) {
+            boolean matchesCategory = currentCategory.isEmpty() || item.category.equals(currentCategory);
+            boolean matchesQuery = currentQuery.isEmpty() || item.name.toLowerCase().contains(currentQuery);
+            
+            if (matchesCategory && matchesQuery) {
+                filtered.add(item);
             }
         }
         adapter.updateList(filtered);
@@ -151,15 +194,11 @@ public class ProductActivity extends AppCompatActivity {
         }
     }
 
-    // --- ADAPTER & MODEL ---
     private static class ProductItem {
         String name, price, category;
         int imageRes;
         ProductItem(String n, String p, String c, int img) { 
-            this.name = n; 
-            this.price = p; 
-            this.category = c; 
-            this.imageRes = img;
+            this.name = n; this.price = p; this.category = c; this.imageRes = img;
         }
     }
 
@@ -169,8 +208,7 @@ public class ProductActivity extends AppCompatActivity {
         public interface OnItemClickListener { void onItemClick(ProductItem item); }
 
         ProductAdapter(List<ProductItem> list, OnItemClickListener listener) { 
-            this.list = list; 
-            this.listener = listener;
+            this.list = list; this.listener = listener;
         }
 
         public void updateList(List<ProductItem> newList) {

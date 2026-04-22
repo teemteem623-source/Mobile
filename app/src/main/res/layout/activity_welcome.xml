@@ -5,45 +5,62 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F4F6FB">
+    android:background="#FFFFFF">
 
-    <!-- nền cong trên -->
+    <!-- Nền cong trên -->
     <View
         android:id="@+id/topCurve"
         android:layout_width="0dp"
-        android:layout_height="250dp"
+        android:layout_height="320dp"
         android:background="@drawable/bg_top_curve"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Text giới thiệu shop trên nền cong -->
-    <TextView
-        android:id="@+id/tvShopName"
-        android:layout_width="wrap_content"
+    <!-- Nội dung giới thiệu trên nền cong -->
+    <LinearLayout
+        android:id="@+id/headerIntro"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="HITC Phone Store"
-        android:textColor="#FFFFFF"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:layout_marginTop="50dp"
-        app:layout_constraintTop_toTopOf="@id/topCurve"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:gravity="center"
+        android:layout_marginTop="60dp"
+        app:layout_constraintTop_toTopOf="@id/topCurve">
 
-    <TextView
-        android:id="@+id/tvShopSlogan"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Công nghệ dẫn đầu - Giá cả hàng đầu"
-        android:textColor="#E0E7FF"
-        android:textSize="16sp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/tvShopName"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <TextView
+            android:id="@+id/tvWelcome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CHÀO MỪNG ĐẾN VỚI"
+            android:textColor="#E0E7FF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1" />
 
-    <!-- cụm giữa -->
+        <TextView
+            android:id="@+id/tvShopName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TT SHOP"
+            android:textColor="#FFFFFF"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvFullIntro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nơi hội tụ những siêu phẩm công nghệ hàng đầu thế giới. Chúng tôi cam kết mang đến cho bạn trải nghiệm mua sắm tuyệt vời nhất với dịch vụ tận tâm và chính sách hậu mãi số 1 Việt Nam. Khám phá ngay hôm nay!"
+            android:textColor="#F1F5F9"
+            android:textSize="15sp"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
+    <!-- Cụm giữa: Ảnh và Slogan -->
     <LinearLayout
         android:id="@+id/contentBox"
         android:layout_width="match_parent"
@@ -51,13 +68,13 @@
         android:orientation="horizontal"
         android:padding="20dp"
         android:gravity="center_vertical"
-        app:layout_constraintTop_toBottomOf="@id/topCurve"
+        app:layout_constraintTop_toBottomOf="@id/headerIntro"
         app:layout_constraintBottom_toTopOf="@id/btnStart">
 
-        <!-- ảnh điện thoại - Đã phóng to -->
+        <!-- Ảnh điện thoại - Giảm kích thước để text rộng hơn -->
         <FrameLayout
-            android:layout_width="200dp"
-            android:layout_height="380dp">
+            android:layout_width="140dp"
+            android:layout_height="260dp">
 
             <ImageView
                 android:id="@+id/imgPhone"
@@ -66,47 +83,73 @@
                 android:src="@drawable/phone_mockup"
                 android:scaleType="fitCenter"/>
 
-            <!-- chữ bên trong màn hình điện thoại -->
+            <!-- Chữ bên trong màn hình điện thoại - Thêm nội dung phong phú -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="24dp">
+                android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="SALE 30%"
+                    android:text="SIÊU"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:textColor="#1E40AF"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ƯU ĐÃI"
                     android:textStyle="bold"
                     android:textSize="18sp"
-                    android:textColor="#2563EB"/>
+                    android:textColor="#E11D48"/>
+
+                <View
+                    android:layout_width="40dp"
+                    android:layout_height="2dp"
+                    android:background="#E2E8F0"
+                    android:layout_marginVertical="8dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Hot Items"
-                    android:textSize="14sp"
-                    android:textColor="#6B7280"
-                    android:layout_marginTop="8dp"/>
+                    android:text="GIẢM ĐẾN"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#64748B" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="iPhone • Samsung"
-                    android:textSize="12sp"
-                    android:textColor="#9CA3AF"
-                    android:layout_marginTop="4dp"/>
+                    android:text="50%"
+                    android:textStyle="bold"
+                    android:textSize="28sp"
+                    android:textColor="#1E40AF"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MUA NGAY"
+                    android:textSize="11sp"
+                    android:layout_marginTop="8dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:background="#1E40AF"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
             </LinearLayout>
         </FrameLayout>
 
-        <!-- chữ bên phải -->
+        <!-- Chữ bên phải - Có nhiều không gian hơn -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:layout_marginStart="20dp">
 
             <TextView
                 android:id="@+id/tvTitle"
@@ -115,33 +158,33 @@
                 android:text="Mua sắm thả ga"
                 android:textSize="26sp"
                 android:textStyle="bold"
-                android:textColor="#1F2937"/>
+                android:textColor="#1E293B"/>
 
             <TextView
                 android:id="@+id/tvDesc"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Hàng ngàn ưu đãi đang chờ đón bạn ngay hôm nay."
+                android:text="Hàng ngàn sản phẩm chính hãng với mức giá cực kỳ ưu đãi đang chờ đón bạn."
                 android:textSize="15sp"
-                android:textColor="#6B7280"
-                android:layout_marginTop="12dp"/>
+                android:textColor="#64748B"
+                android:layout_marginTop="12dp"
+                android:lineSpacingExtra="2dp"/>
         </LinearLayout>
     </LinearLayout>
 
-    <!-- nút -->
+    <!-- Nút bắt đầu -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnStart"
-        android:layout_width="240dp"
-        android:layout_height="56dp"
-        android:text="Bắt đầu ngay"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginHorizontal="32dp"
+        android:text="Khám phá ngay"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
-        app:backgroundTint="#2563EB"
-        app:cornerRadius="28dp"
+        app:backgroundTint="#1E40AF"
+        app:cornerRadius="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="40dp"/>
+        android:layout_marginBottom="50dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
