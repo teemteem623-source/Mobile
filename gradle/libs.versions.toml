@@ -1,5 +1,5 @@
 [versions]
-agp = "8.7.3"
+agp = "8.2.2"
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
@@ -9,6 +9,10 @@ activity = "1.8.0"
 constraintlayout = "2.1.4"
 recyclerview = "1.4.0"
 gson = "2.10.1"
+retrofit = "2.9.0"
+okhttp = "4.12.0"
+firebase-auth = "22.3.0"
+firebase-db = "20.3.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -19,7 +23,13 @@ material = { group = "com.google.android.material", name = "material", version.r
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+
+# 🔥 Firebase
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebase-auth" }
+firebase-database = { group = "com.google.firebase", name = "firebase-database", version.ref = "firebase-db" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+google-services = { id = "com.google.gms.google-services", version = "4.3.15" }

@@ -5,167 +5,243 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFF"
+    android:background="#F8F8F8"
     tools:context=".CartActivity">
 
-    <!-- ===== TOP BAR ===== -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/topBarCard"
+    <!-- HEADER: TikTok Style -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="#FFFFFF"
+        android:paddingTop="40dp"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="12dp"
+        android:background="#FFFFFF"
         app:layout_constraintTop_toTopOf="parent">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:paddingHorizontal="16dp">
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/back"
+            app:tint="#1E293B"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
 
-            <ImageView
-                android:id="@+id/btnBack"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_centerVertical="true"
-                android:src="@android:drawable/ic_menu_revert"
-                app:tint="#1E40AF"
-                android:contentDescription="Quay lại" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:text="Giỏ hàng"
-                android:textColor="#1E293B"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-        </RelativeLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- ===== LIST VIEW (Sản phẩm trong giỏ) ===== -->
-    <!-- layout_height="wrap_content" kết hợp với layout_constrainedHeight="true"
-         để danh sách co giãn và đẩy phần dưới lên nếu ít item -->
-    <ListView
-        android:id="@+id/lvCartItems"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constrainedHeight="true"
-        android:divider="@null"
-        android:dividerHeight="0dp"
-        android:padding="12dp"
-        android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/topBarCard"
-        app:layout_constraintBottom_toTopOf="@id/dividerRelated"
-        app:layout_constraintVertical_bias="0.0" />
-
-    <!-- ===== ĐƯỜNG GẠCH NGANG ===== -->
-    <LinearLayout
-        android:id="@+id/dividerRelated"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:paddingHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/lvCartItems"
-        app:layout_constraintBottom_toTopOf="@id/scrollRelated">
-
-        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="#CBD5E1"/>
         <TextView
+            android:id="@+id/tvHeaderTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=" SẢN PHẨM LIÊN QUAN "
-            android:textColor="#64748B"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="#CBD5E1"/>
-    </LinearLayout>
+            android:text="Giỏ hàng"
+            android:textColor="#000000"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- ===== PHẦN SẢN PHẨM LIÊN QUAN (Xổ dọc 2 cột) ===== -->
+        <TextView
+            android:id="@+id/btnDeleteAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Xóa tất cả"
+            android:textColor="#FE2C55"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <androidx.core.widget.NestedScrollView
-        android:id="@+id/scrollRelated"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/dividerRelated"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
         app:layout_constraintBottom_toTopOf="@id/bottomActionCard">
-
-        <GridLayout
-            android:id="@+id/gridRelated"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:columnCount="2"
-            android:paddingHorizontal="8dp"
-            android:alignmentMode="alignMargins">
-
-            <!-- Các item liên quan (Mẫu) -->
-            <include layout="@layout/item_related_small" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content" />
-            <include layout="@layout/item_related_small" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content" />
-            <include layout="@layout/item_related_small" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content" />
-            <include layout="@layout/item_related_small" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content" />
-
-        </GridLayout>
-    </androidx.core.widget.NestedScrollView>
-
-    <!-- ===== BOTTOM ACTION BAR (Màu trắng) ===== -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/bottomActionCard"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardElevation="16dp"
-        app:cardBackgroundColor="#FFFFFF"
-        app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
+            android:orientation="vertical">
 
+            <!-- Freeship Banner -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <CheckBox
-                    android:id="@+id/chkSelectAll"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Tất cả"
-                    android:checked="true"
-                    android:textStyle="bold"
-                    android:textSize="15sp"
-                    app:buttonTint="#1E40AF" />
-
+                android:background="#EFFFFB"
+                android:padding="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/logistic"
+                    app:tint="#00B5AD" />
                 <TextView
-                    android:id="@+id/btnDeleteAll"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Xóa tất cả"
-                    android:textColor="#EF4444"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:clickable="true"
-                    android:focusable="true" />
+                    android:text="Bạn được freeship!"
+                    android:textColor="#00B5AD"
+                    android:textSize="13sp" />
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPayment"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="2"
-                android:text="THANH TOÁN"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                app:cornerRadius="12dp"
-                app:backgroundTint="#1E40AF"
-                android:textColor="#FFFFFF" />
+            <LinearLayout
+                android:id="@+id/layoutEmptyCart"
+                android:layout_width="match_parent"
+                android:layout_height="400dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
 
+                <ImageView
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:src="@drawable/shoppingcart"
+                    app:tint="#E2E8F0" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Chưa có sản phẩm nào"
+                    android:textColor="#94A3B8"
+                    android:textSize="15sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShopNow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    app:cornerRadius="20dp"
+                    app:backgroundTint="#007AFF"
+                    android:text="Mua sắm ngay"
+                    android:textColor="#FFFFFF"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutCartContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <LinearLayout
+                    android:id="@+id/containerCartItems"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Có thể bạn cũng thích"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvExploreMore"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="8dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="100dp" />
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- BOTTOM ACTION -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/bottomActionCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:elevation="10dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:id="@+id/layoutSelectAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <CheckBox
+                android:id="@+id/chkSelectAll"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:button="@null"
+                android:background="@drawable/custom_checkbox_circle"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Tất cả"
+                android:textColor="#444444"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end"
+            app:layout_constraintEnd_toStartOf="@id/btnPayment"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginEnd="12dp">
+
+            <TextView
+                android:id="@+id/tvTotalPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0đ"
+                android:textColor="#FE2C55"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvSavingPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tiết kiệm 0đ"
+                android:textColor="#FE2C55"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPayment"
+            android:layout_width="140dp"
+            android:layout_height="44dp"
+            android:text="Thanh toán"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            app:cornerRadius="22dp"
+            app:backgroundTint="#007AFF"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

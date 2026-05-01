@@ -8,72 +8,97 @@
     android:background="#FFFFFF"
     tools:context=".ProfileActivity">
 
-    <!-- ===== TOP BAR ===== -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/topBarCard"
+    <!-- HEADER SECTION -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="#FFFFFF"
+        android:paddingTop="16dp"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="16dp"
+        android:background="#1E3A8A"
         app:layout_constraintTop_toTopOf="parent">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:paddingHorizontal="16dp">
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/back"
+            android:contentDescription="Back"
+            app:tint="#FFFFFF"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvHeaderTitle"
+            app:layout_constraintBottom_toBottomOf="@id/tvHeaderTitle"/>
 
-            <ImageView
-                android:id="@+id/btnBack"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_centerVertical="true"
-                android:src="@android:drawable/ic_menu_revert"
-                app:tint="#1E40AF"
-                android:contentDescription="Quay lại" />
+        <TextView
+            android:id="@+id/tvHeaderTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thông tin cá nhân"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:text="Thông tin cá nhân"
-                android:textColor="#000000"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-        </RelativeLayout>
-    </androidx.cardview.widget.CardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!-- ScrollView -->
     <ScrollView
+        android:id="@+id/scrollViewProfile"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/topBarCard"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
         app:layout_constraintBottom_toTopOf="@id/btnUpdateProfile">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="20dp"
+            android:paddingBottom="100dp"
+            android:gravity="center_horizontal">
 
-            <!-- Avatar -->
-            <ImageView
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_gravity="center"
-                android:layout_marginBottom="32dp"
+            <!-- Avatar Section (Fixed Default Image) -->
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/imgProfileAvatar"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginBottom="16dp"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/CircleImage"
+                android:src="@drawable/people" />
+
+            <!-- Membership Level -->
+            <TextView
+                android:id="@+id/tvProfileMembership"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thành viên Đồng"
+                android:textColor="#1E3A8A"
+                android:textSize="16sp"
+                android:textStyle="bold"
                 android:background="@drawable/bg_top_curve"
-                android:backgroundTint="#F1F5F9"
-                android:padding="20dp"
-                android:src="@android:drawable/ic_menu_gallery" />
+                android:backgroundTint="#E0E7FF"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="6dp"
+                android:layout_marginBottom="24dp"/>
 
-            <!-- Họ và tên -->
+            <!-- Inputs -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Họ và tên"
+                android:textColorHint="#94A3B8"
+                app:hintTextColor="#64748B"
                 app:boxStrokeColor="#000000"
-                app:hintTextColor="#000000">
+                app:boxStrokeWidth="1.5dp"
+                app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+                app:startIconTint="#000000">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfileName"
                     android:layout_width="match_parent"
@@ -81,18 +106,21 @@
                     android:inputType="textPersonName"
                     android:textColor="#000000"
                     android:textStyle="bold"
-                    android:text="Người dùng TT SHOP" />
+                    android:textSize="16sp"/>
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Số điện thoại -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Số điện thoại"
+                android:textColorHint="#94A3B8"
+                app:hintTextColor="#64748B"
                 app:boxStrokeColor="#000000"
-                app:hintTextColor="#000000">
+                app:boxStrokeWidth="1.5dp"
+                app:startIconDrawable="@android:drawable/ic_menu_call"
+                app:startIconTint="#000000">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfilePhone"
                     android:layout_width="match_parent"
@@ -100,18 +128,21 @@
                     android:inputType="phone"
                     android:textColor="#000000"
                     android:textStyle="bold"
-                    android:text="0901234567" />
+                    android:textSize="16sp"/>
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Email -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Email"
+                android:textColorHint="#94A3B8"
+                app:hintTextColor="#64748B"
                 app:boxStrokeColor="#000000"
-                app:hintTextColor="#000000">
+                app:boxStrokeWidth="1.5dp"
+                app:startIconDrawable="@android:drawable/ic_dialog_email"
+                app:startIconTint="#000000">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfileEmail"
                     android:layout_width="match_parent"
@@ -119,57 +150,69 @@
                     android:inputType="textEmailAddress"
                     android:textColor="#000000"
                     android:textStyle="bold"
-                    android:text="user@ttshop.com" />
+                    android:textSize="16sp"/>
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Mật khẩu (Chỉ xem - Bị khóa) -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilProfileAddress"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="Mật khẩu"
-                app:boxStrokeColor="#94A3B8"
-                app:hintTextColor="#94A3B8">
+                android:hint="Địa chỉ"
+                android:textColorHint="#94A3B8"
+                app:hintTextColor="#64748B"
+                app:boxStrokeColor="#000000"
+                app:boxStrokeWidth="1.5dp"
+                app:startIconDrawable="@android:drawable/ic_menu_directions"
+                app:startIconTint="#000000">
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/edtProfilePassword"
+                    android:id="@+id/edtProfileAddress"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPassword"
-                    android:enabled="false"
-                    android:textColor="#94A3B8"
-                    android:text="********" />
+                    android:inputType="textPostalAddress"
+                    android:textColor="#000000"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:cursorVisible="false"/>
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Nút đổi mật khẩu -->
-            <TextView
-                android:id="@+id/tvChangePassword"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:layout_gravity="end"
-                android:text="Đổi mật khẩu?"
-                android:textColor="#1E40AF"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:padding="8dp"
-                android:clickable="true"
-                android:focusable="true" />
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <TextView
+                    android:id="@+id/tvChangePassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Đổi mật khẩu?"
+                    android:textColor="#1E40AF"
+                    android:textStyle="bold"
+                    android:padding="12dp" />
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- Nút Cập nhật -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnUpdateProfile"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="60dp"
         android:layout_margin="16dp"
         android:text="CẬP NHẬT THÔNG TIN"
+        android:textColor="#FFFFFF"
         android:textStyle="bold"
-        android:textSize="16sp"
         app:cornerRadius="12dp"
         app:backgroundTint="#1E40AF"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

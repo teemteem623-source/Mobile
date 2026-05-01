@@ -1,13 +1,14 @@
 package com.example.hitcapp;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -17,9 +18,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
@@ -28,10 +28,10 @@ import java.util.List;
 public class NoticeActivity extends AppCompatActivity {
 
     private RecyclerView rvNotices;
-    private BottomNavigationView bottomNavigation;
     private List<NoticeItem> fullNoticeList = new ArrayList<>();
     private NoticeAdapter adapter;
-    private ChipGroup chipGroup;
+    private LinearLayout tabHome, tabProduct, tabNotification, tabProfile;
+    private SwipeRefreshLayout swipeRefresh;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,184 +39,183 @@ public class NoticeActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notice);
 
-        // Xử lý Safe Area
+        initViews();
+        setupInsets();
+        initCustomBottomNav();
+        setupRecyclerView();
+        setupChips();
+        
+        initData();
+        swipeRefresh.setOnRefreshListener(() -> {
+            initData();
+            swipeRefresh.setRefreshing(false);
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (tabNotification != null) selectTab(tabNotification);
+    }
+
+    private void initViews() {
+        rvNotices = findViewById(R.id.rvNotices);
+        swipeRefresh = findViewById(R.id.swipeRefresh);
+        
+        View imgCart = findViewById(R.id.imgCart);
+        if (imgCart != null) {
+            imgCart.setOnClickListener(v -> startActivity(new Intent(this, CartActivity.class)));
+        }
+    }
+
+    private void setupInsets() {
         View mainView = findViewById(R.id.main);
-        View topBar = findViewById(R.id.topBarCard);
-        bottomNavigation = findViewById(R.id.bottomNavigation);
+        View topBar = findViewById(R.id.topBar);
+        View bottomNav = findViewById(R.id.bottomNavigationCustom);
 
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                if (topBar != null) topBar.setPadding(0, systemBars.top, 0, 0);
-                if (bottomNavigation != null) bottomNavigation.setPadding(0, 0, 0, systemBars.bottom);
+                v.setPadding(systemBars.left, 0, systemBars.right, 0);
                 return insets;
             });
         }
-
-        // Khởi tạo dữ liệu mẫu phong phú
-        initData();
-
-        // Setup RecyclerView
-        rvNotices = findViewById(R.id.rvNotices);
-        rvNotices.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new NoticeAdapter(new ArrayList<>(fullNoticeList));
-        rvNotices.setAdapter(adapter);
-
-        // Xử lý sự kiện nhấn Chip để lọc (Chọn 1 cái duy nhất)
-        setupChips();
-
-        // Thanh điều hướng
-        if (bottomNavigation != null) {
-            bottomNavigation.setSelectedItemId(R.id.nav_notifications);
-            bottomNavigation.setOnItemSelectedListener(item -> {
-                int itemId = item.getItemId();
-                if (itemId == R.id.nav_home) {
-                    startActivity(new Intent(this, HomeActivity.class));
-                    finish();
-                    return true;
-                } else if (itemId == R.id.nav_products) {
-                    startActivity(new Intent(this, ProductActivity.class));
-                    finish();
-                    return true;
-                } else if (itemId == R.id.nav_notifications) {
-                    return true;
-                } else if (itemId == R.id.nav_profile) {
-                    startActivity(new Intent(this, UserActivity.class));
-                    finish();
-                    return true;
-                }
-                return false;
+        if (topBar != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(topBar, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(v.getPaddingLeft(), systemBars.top, v.getPaddingRight(), v.getPaddingBottom());
+                return insets;
+            });
+        }
+        if (bottomNav != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), systemBars.bottom);
+                return insets;
             });
         }
     }
 
+    private void initCustomBottomNav() {
+        tabHome = findViewById(R.id.tabHome);
+        tabProduct = findViewById(R.id.tabProduct);
+        tabNotification = findViewById(R.id.tabNotification);
+        tabProfile = findViewById(R.id.tabProfile);
+
+        if (tabHome != null) {
+            tabHome.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+            });
+        }
+        if (tabProduct != null) {
+            tabProduct.setOnClickListener(v -> {
+                Intent intent = new Intent(this, ProductActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+            });
+        }
+        if (tabProfile != null) {
+            tabProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(this, UserActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+            });
+        }
+    }
+
+    private void selectTab(LinearLayout selected) {
+        LinearLayout[] tabs = {tabHome, tabProduct, tabNotification, tabProfile};
+        int[] iconIds = {R.id.iconHome, R.id.iconProduct, R.id.iconNotification, R.id.iconProfile};
+        int[] textIds = {R.id.textHome, R.id.textProduct, R.id.textNotification, R.id.textProfile};
+
+        for (int i = 0; i < tabs.length; i++) {
+            LinearLayout tab = tabs[i];
+            if (tab == null) continue;
+            
+            boolean isSelected = (tab == selected);
+            ImageView icon = findViewById(iconIds[i]);
+            TextView text = findViewById(textIds[i]);
+
+            int color = isSelected ? Color.parseColor("#1E3A8A") : Color.parseColor("#94A3B8");
+            if (icon != null) icon.setColorFilter(color);
+            if (text != null) {
+                text.setTextColor(color);
+                text.setTypeface(null, isSelected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+            }
+        }
+    }
+
+    private void setupRecyclerView() {
+        rvNotices.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new NoticeAdapter(new ArrayList<>(fullNoticeList));
+        rvNotices.setAdapter(adapter);
+    }
+
     private void initData() {
-        // 1. Ưu đãi
-        fullNoticeList.add(new NoticeItem("Ưu đãi iPhone 15 Pro Max", "Siêu phẩm iPhone 15 Pro Max đang được giảm giá kịch sàn tại TT SHOP. Hãy nhanh tay sở hữu ngay hôm nay để nhận thêm bộ quà tặng 2 triệu đồng và gói bảo hành rơi vỡ 12 tháng. Chương trình chỉ áp dụng đến hết tuần này hoặc cho đến khi hết quà tặng. Đừng bỏ lỡ cơ hội vàng này để sở hữu chiếc điện thoại mơ ước với mức giá tốt nhất thị trường!", android.R.drawable.ic_menu_send, "#E11D48", "Ưu đãi"));
-        fullNoticeList.add(new NoticeItem("Mã giảm giá 50% cho phụ kiện", "Nhận ngay mã giảm giá 50% khi mua kèm ốp lưng và dán cường lực cho tất cả các dòng iPhone. Nhập mã: ACC50. Ưu đãi áp dụng tại cửa hàng và online.", android.R.drawable.ic_menu_send, "#E11D48", "Ưu đãi"));
-        fullNoticeList.add(new NoticeItem("Flash Sale Giờ Vàng", "Duy nhất từ 12h - 14h hôm nay, tai nghe Airpods 3 giảm chỉ còn 2.990.000đ. Số lượng cực kỳ có hạn, mỗi khách hàng chỉ được mua tối đa 1 sản phẩm. Hãy đặt báo thức để không bỏ lỡ!", android.R.drawable.ic_menu_send, "#E11D48", "Ưu đãi"));
-
-        // 2. Giao dịch
-        fullNoticeList.add(new NoticeItem("Giao dịch thành công", "Bạn đã thanh toán thành công số tiền 15.000.000đ cho đơn hàng #TT12345. Sản phẩm đang được đóng gói và sẽ sớm bàn giao cho đơn vị vận chuyển. Cảm ơn bạn đã tin tưởng mua sắm tại TT SHOP. Bạn có thể theo dõi tiến trình đơn hàng trong mục Đơn hàng của tôi.", android.R.drawable.ic_menu_save, "#059669", "Giao dịch"));
-        fullNoticeList.add(new NoticeItem("Đơn hàng đang được giao", "Đơn hàng #TT67890 của bạn đang trên đường vận chuyển và dự kiến sẽ đến tay bạn trong vòng 2-3 ngày tới. Vui lòng giữ điện thoại để shipper liên hệ giao hàng nhé.", android.R.drawable.ic_menu_save, "#059669", "Giao dịch"));
-        fullNoticeList.add(new NoticeItem("Hoàn tiền hoàn tất", "Yêu cầu hoàn tiền cho đơn hàng #TT00112 đã được xử lý thành công. Số tiền 500.000đ đã được chuyển về ví của bạn. Vui lòng kiểm tra lại tài khoản.", android.R.drawable.ic_menu_save, "#059669", "Giao dịch"));
-
-        // 3. Nhắc nhở
-        fullNoticeList.add(new NoticeItem("Thông báo Bảo trì Hệ thống", "Để nâng cao trải nghiệm khách hàng, ứng dụng sẽ tiến hành bảo trì định kỳ từ 0h00 đến 2h00 sáng ngày mai. Trong thời gian này, một số tính năng thanh toán có thể bị gián đoạn. Rất xin lỗi vì sự bất tiện này và cảm ơn sự thông cảm của bạn.", android.R.drawable.ic_lock_idle_alarm, "#F59E0B", "Nhắc nhở"));
-        fullNoticeList.add(new NoticeItem("Nhắc nhở đánh giá", "Bạn đã nhận được đơn hàng #TT55443 chưa? Hãy dành 1 phút để đánh giá chất lượng sản phẩm và dịch vụ để giúp chúng tôi hoàn thiện hơn nhé. Mỗi đánh giá sẽ được tặng ngay 10 điểm thưởng tích lũy.", android.R.drawable.ic_lock_idle_alarm, "#F59E0B", "Nhắc nhở"));
-        fullNoticeList.add(new NoticeItem("Cập nhật phiên bản mới", "Đã có phiên bản 2.1.0 mới nhất với tính năng tìm kiếm bằng hình ảnh cực kỳ tiện lợi. Hãy cập nhật ngay để có trải nghiệm mua sắm mượt mà nhất!", android.R.drawable.ic_lock_idle_alarm, "#F59E0B", "Nhắc nhở"));
-
-        // 4. Tài khoản
-        fullNoticeList.add(new NoticeItem("Cảnh báo Đăng nhập Lạ", "Tài khoản của bạn vừa được đăng nhập từ một thiết bị Chrome trên Windows tại khu vực Hà Nội. Nếu không phải bạn thực hiện thao tác này, vui lòng nhấn vào đây để đổi mật khẩu ngay lập tức và bảo vệ tài khoản của mình. Đừng chia sẻ mã OTP cho bất kỳ ai!", android.R.drawable.ic_lock_lock, "#DC2626", "Tài khoản"));
-        fullNoticeList.add(new NoticeItem("Chúc mừng sinh nhật", "Chúc mừng sinh nhật khách hàng thân thiết! TT SHOP gửi tặng bạn món quà bất ngờ là mã giảm giá 200k cho đơn hàng từ 1 triệu đồng. Mã: HBD_USER. Chúc bạn có một ngày sinh nhật thật ý nghĩa và hạnh phúc bên gia đình!", android.R.drawable.ic_menu_myplaces, "#8B5CF6", "Tài khoản"));
-        fullNoticeList.add(new NoticeItem("Nâng hạng thành viên", "Chúc mừng bạn đã đạt hạng VÀNG! Với thứ hạng này, bạn sẽ nhận được ưu đãi miễn phí vận chuyển trọn đời cho mọi đơn hàng và giảm thêm 2% khi mua trực tiếp tại cửa hàng.", android.R.drawable.ic_menu_myplaces, "#8B5CF6", "Tài khoản"));
+        fullNoticeList.clear();
+        fullNoticeList.add(new NoticeItem("Siêu ưu đãi cuối tuần", "Giảm giá 50% cho tất cả dòng iPhone tại cửa hàng. Duy nhất Chủ nhật này!", android.R.drawable.ic_menu_send, "#E11D48", "Khuyến mãi", "10:30"));
+        fullNoticeList.add(new NoticeItem("Đơn hàng đang đến", "Đơn hàng #TT9988 đang được nhân viên giao hàng vận chuyển đến bạn.", android.R.drawable.ic_menu_save, "#3B82F6", "Đơn hàng", "09:15"));
+        fullNoticeList.add(new NoticeItem("Ví của bạn đã được nạp tiền", "Bạn vừa nạp thành công 500.000đ vào ví TT-Pay.", android.R.drawable.ic_menu_add, "#10B981", "Hệ thống", "Hôm qua"));
+        fullNoticeList.add(new NoticeItem("Cập nhật ứng dụng", "HitcApp đã có phiên bản mới với nhiều tính năng hấp dẫn. Cập nhật ngay!", android.R.drawable.ic_popup_reminder, "#8B5CF6", "Hệ thống", "12/12"));
+        adapter.updateList(new ArrayList<>(fullNoticeList));
     }
 
     private void setupChips() {
-        chipGroup = findViewById(R.id.chipGroup);
-        
+        ChipGroup chipGroup = findViewById(R.id.chipGroup);
+        if (chipGroup == null) return;
         chipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.isEmpty()) return;
+            if (checkedIds.isEmpty()) { adapter.updateList(new ArrayList<>(fullNoticeList)); return; }
+            int id = checkedIds.get(0);
+            String cat = "";
+            if (id == R.id.chipAll) cat = "";
+            else if (id == R.id.chipUuDai) cat = "Khuyến mãi";
+            else if (id == R.id.chipDonHang) cat = "Đơn hàng";
+            else if (id == R.id.chipHeThong) cat = "Hệ thống";
             
-            int checkedId = checkedIds.get(0);
-            String category = "";
-            
-            if (checkedId == R.id.chipGiaoDich) category = "Giao dịch";
-            else if (checkedId == R.id.chipUuDai) category = "Ưu đãi";
-            else if (checkedId == R.id.chipNhacNho) category = "Nhắc nhở";
-            else if (checkedId == R.id.chipTaiKhoan) category = "Tài khoản";
-            
-            filterNotices(category);
+            if (cat.isEmpty()) {
+                adapter.updateList(new ArrayList<>(fullNoticeList));
+            } else {
+                List<NoticeItem> filtered = new ArrayList<>();
+                for (NoticeItem item : fullNoticeList) if (item.category.equals(cat)) filtered.add(item);
+                adapter.updateList(filtered);
+            }
         });
     }
 
-    private void filterNotices(String category) {
-        List<NoticeItem> filtered = new ArrayList<>();
-        if (category.isEmpty()) {
-            filtered.addAll(fullNoticeList);
-        } else {
-            for (NoticeItem item : fullNoticeList) {
-                if (item.category.equals(category)) {
-                    filtered.add(item);
-                }
-            }
-        }
-        adapter.updateList(filtered);
-    }
-
     private static class NoticeItem {
-        String title, content, colorHex, category;
-        int iconRes;
-        boolean isExpanded = false;
-        NoticeItem(String t, String c, int icon, String color, String cat) { 
-            this.title = t; 
-            this.content = c; 
-            this.iconRes = icon;
-            this.colorHex = color;
-            this.category = cat;
+        String title, content, colorHex, category, time; int iconRes;
+        NoticeItem(String t, String c, int icon, String color, String cat, String time) { 
+            this.title = t; this.content = c; this.iconRes = icon; this.colorHex = color; this.category = cat; this.time = time;
         }
     }
 
     private static class NoticeAdapter extends RecyclerView.Adapter<NoticeAdapter.ViewHolder> {
         private List<NoticeItem> list;
         NoticeAdapter(List<NoticeItem> list) { this.list = list; }
-
-        public void updateList(List<NoticeItem> newList) {
-            this.list = newList;
-            notifyDataSetChanged();
-        }
-
-        @NonNull @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_notice, parent, false);
+        public void updateList(List<NoticeItem> newList) { this.list = newList; notifyDataSetChanged(); }
+        @NonNull @Override public ViewHolder onCreateViewHolder(@NonNull ViewGroup p, int vt) {
+            View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_notice, p, false);
             return new ViewHolder(v);
         }
-
-        @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            NoticeItem item = list.get(position);
-            holder.tvTitle.setText(item.title);
-            holder.tvContent.setText(item.content);
-            holder.imgIcon.setImageResource(item.iconRes);
-            
-            try {
-                holder.imgIcon.setColorFilter(android.graphics.Color.parseColor(item.colorHex));
-                holder.imgIcon.getBackground().setTint(android.graphics.Color.parseColor(item.colorHex));
-                holder.imgIcon.getBackground().setAlpha(30);
-            } catch (Exception e) {}
-
-            if (item.content.length() > 100) {
-                holder.btnDetail.setVisibility(item.isExpanded ? View.GONE : View.VISIBLE);
-                holder.tvContent.setMaxLines(item.isExpanded ? Integer.MAX_VALUE : 3);
-            } else {
-                holder.btnDetail.setVisibility(View.GONE);
-                holder.tvContent.setMaxLines(Integer.MAX_VALUE);
-            }
-
-            holder.btnDetail.setOnClickListener(v -> {
-                item.isExpanded = true;
-                notifyItemChanged(position);
-            });
-
-            holder.itemView.setOnClickListener(v -> {
-                if (item.isExpanded) {
-                    item.isExpanded = false;
-                    notifyItemChanged(position);
-                }
-            });
+        @Override public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
+            NoticeItem item = list.get(pos);
+            h.tvTitle.setText(item.title); 
+            h.tvContent.setText(item.content); 
+            h.tvTime.setText(item.time);
+            h.imgIcon.setImageResource(item.iconRes);
+            try { h.imgIcon.setColorFilter(Color.parseColor(item.colorHex)); } catch (Exception e) {}
         }
-
         @Override public int getItemCount() { return list.size(); }
-
         static class ViewHolder extends RecyclerView.ViewHolder {
-            TextView tvTitle, tvContent, btnDetail;
-            ImageView imgIcon;
-            ViewHolder(View v) {
-                super(v);
-                tvTitle = v.findViewById(R.id.tvTitle);
-                tvContent = v.findViewById(R.id.tvContent);
-                btnDetail = v.findViewById(R.id.btnViewDetail);
-                imgIcon = v.findViewById(R.id.imgNoticeIcon);
+            TextView tvTitle, tvContent, tvTime; ImageView imgIcon;
+            ViewHolder(View v) { 
+                super(v); 
+                tvTitle = v.findViewById(R.id.tvTitle); 
+                tvContent = v.findViewById(R.id.tvContent); 
+                tvTime = v.findViewById(R.id.tvTime);
+                imgIcon = v.findViewById(R.id.imgNoticeIcon); 
             }
         }
     }

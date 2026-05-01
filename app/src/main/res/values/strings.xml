@@ -7,6 +7,14 @@
     <string name="mua">Mua</string>
     <string name="gi_100_000">Giá: 100,000đ</string>
     <string name="gi_250_000">Giá: 250,000đ</string>
-    <string name="app_name" />
+    <string name="app_name">HITC App</string>
     <string name="s_n_ph_m_3">Sản phẩm 3</string>
+
+    <!-- Google Web Client ID lấy từ google-services.json -->
+    <string name="my_web_client_id">1085030708327-6giru505k6vtfvp2qfbmdr4ld25go3ji.apps.googleusercontent.com</string>
+
+    <!-- Facebook Login Config -->
+    <string name="facebook_app_id">1246727317444660</string>
+    <string name="fb_login_protocol_scheme">fb1246727317444660</string>
+    <string name="facebook_client_token">c4da258a92ecbed442ce072170d99e78</string>
 </resources>

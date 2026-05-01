@@ -4,11 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.ImageView;
-import android.widget.ListView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,8 +15,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.example.hitcapp.adapters.ProductAdapter;
+import com.example.hitcapp.models.CartItem;
+import com.example.hitcapp.models.Product;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,10 +33,16 @@ import java.util.Locale;
 
 public class CartActivity extends AppCompatActivity {
 
-    private ListView lvCartItems;
-    private CheckBox chkSelectAll;
-    private CartAdapter adapter;
     private List<CartItem> cartItemList = new ArrayList<>();
+    
+    private LinearLayout containerCartItems;
+    private CheckBox chkSelectAll;
+    private TextView tvTotalPrice, tvSavingPrice;
+    private LinearLayout layoutEmptyCart, layoutCartContent;
+    private RecyclerView rvExploreMore;
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
+    private ProductAdapter exploreAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,118 +50,273 @@ public class CartActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_cart);
 
+        db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
+
+        initViews();
+        setupInsets();
+        setupExploreMore();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        fetchCartItems();
+    }
+
+    private void initViews() {
+        containerCartItems = findViewById(R.id.containerCartItems);
+        chkSelectAll = findViewById(R.id.chkSelectAll);
+        tvTotalPrice = findViewById(R.id.tvTotalPrice);
+        tvSavingPrice = findViewById(R.id.tvSavingPrice);
+        layoutEmptyCart = findViewById(R.id.layoutEmptyCart);
+        layoutCartContent = findViewById(R.id.layoutCartContent);
+        rvExploreMore = findViewById(R.id.rvExploreMore);
+
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        
+        // SỬA TẠI ĐÂY: Đổi MainActivity thành HomeActivity để quay về trang chủ
+        findViewById(R.id.btnShopNow).setOnClickListener(v -> {
+            Intent intent = new Intent(this, HomeActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
+
+        if (chkSelectAll != null) {
+            chkSelectAll.setChecked(true);
+            chkSelectAll.setOnClickListener(v -> {
+                boolean isChecked = chkSelectAll.isChecked();
+                for (CartItem item : cartItemList) {
+                    item.setSelected(isChecked);
+                    updateItemSelectionInFirestore(item);
+                }
+                renderCartItems();
+                calculateTotalPrice();
+            });
+        }
+
+        findViewById(R.id.btnDeleteAll).setOnClickListener(v -> {
+            deleteAllCartItems();
+        });
+
+        MaterialButton btnPayment = findViewById(R.id.btnPayment);
+        if (btnPayment != null) {
+            btnPayment.setOnClickListener(v -> {
+                ArrayList<CartItem> selectedItems = new ArrayList<>();
+                for (CartItem item : cartItemList) {
+                    if (item.isSelected()) {
+                        selectedItems.add(item);
+                    }
+                }
+                
+                if (selectedItems.isEmpty()) {
+                    Toast.makeText(this, "Vui lòng chọn sản phẩm thanh toán", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                Intent intent = new Intent(CartActivity.this, PaymentActivity.class);
+                intent.putExtra("SELECTED_ITEMS_DATA", selectedItems);
+                startActivity(intent);
+            });
+        }
+    }
+
+    private void fetchCartItems() {
+        if (auth.getCurrentUser() == null) return;
+
+        db.collection("carts")
+                .whereEqualTo("userId", auth.getCurrentUser().getUid())
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    cartItemList.clear();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        CartItem item = doc.toObject(CartItem.class);
+                        item.setCartItemId(doc.getId());
+                        cartItemList.add(item);
+                    }
+                    updateUIState();
+                });
+    }
+
+    private void updateItemSelectionInFirestore(CartItem item) {
+        db.collection("carts").document(item.getCartItemId()).update("selected", item.isSelected());
+    }
+
+    private void updateItemQuantityInFirestore(CartItem item) {
+        db.collection("carts").document(item.getCartItemId()).update("quantity", item.getQuantity());
+    }
+
+    private void deleteItemFromFirestore(CartItem item) {
+        db.collection("carts").document(item.getCartItemId()).delete().addOnSuccessListener(aVoid -> fetchCartItems());
+    }
+
+    private void deleteAllCartItems() {
+        if (auth.getCurrentUser() == null) return;
+        db.collection("carts")
+                .whereEqualTo("userId", auth.getCurrentUser().getUid())
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        doc.getReference().delete();
+                    }
+                    cartItemList.clear();
+                    updateUIState();
+                    Toast.makeText(this, "Đã xóa tất cả sản phẩm", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void setupInsets() {
         View mainView = findViewById(R.id.main);
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                v.setPadding(systemBars.left, 0, systemBars.right, 0);
+                
+                View topBar = findViewById(R.id.topBar);
+                if (topBar != null) {
+                    topBar.setPadding(topBar.getPaddingLeft(), systemBars.top, topBar.getPaddingRight(), topBar.getPaddingBottom());
+                }
+                
+                View bottomAction = findViewById(R.id.bottomActionCard);
+                if (bottomAction != null) {
+                    bottomAction.setPadding(bottomAction.getPaddingLeft(), bottomAction.getPaddingTop(), bottomAction.getPaddingRight(), systemBars.bottom);
+                }
                 return insets;
             });
         }
-
-        ImageView btnBack = findViewById(R.id.btnBack);
-        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
-
-        // --- CẬP NHẬT HÌNH ẢNH SẢN PHẨM TRONG GIỎ HÀNG ---
-        cartItemList.add(new CartItem("iPhone 15 Pro", "Titan Tự Nhiên, 256GB", 28990000, 1, R.drawable.iphone15pro));
-        cartItemList.add(new CartItem("Samsung S24", "Titanium Black, 256GB", 25490000, 1, R.drawable.samsungs24));
-
-        lvCartItems = findViewById(R.id.lvCartItems);
-        adapter = new CartAdapter();
-        lvCartItems.setAdapter(adapter);
-
-        chkSelectAll = findViewById(R.id.chkSelectAll);
-        chkSelectAll.setChecked(true);
-        chkSelectAll.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            for (CartItem item : cartItemList) item.isSelected = isChecked;
-            adapter.notifyDataSetChanged();
-        });
-
-        findViewById(R.id.btnDeleteAll).setOnClickListener(v -> {
-            cartItemList.clear();
-            adapter.notifyDataSetChanged();
-            chkSelectAll.setChecked(false);
-            Toast.makeText(this, "Giỏ hàng trống", Toast.LENGTH_SHORT).show();
-        });
-
-        MaterialButton btnPayment = findViewById(R.id.btnPayment);
-        btnPayment.setOnClickListener(v -> {
-            if (cartItemList.isEmpty()) return;
-            startActivity(new Intent(CartActivity.this, PaymentActivity.class));
-        });
-
-        setupRelatedProducts();
     }
 
-    private void setupRelatedProducts() {
-        View relatedContainer = findViewById(R.id.gridRelated);
-        if (relatedContainer instanceof android.widget.GridLayout) {
-            android.widget.GridLayout grid = (android.widget.GridLayout) relatedContainer;
+    private void updateUIState() {
+        if (cartItemList.isEmpty()) {
+            layoutEmptyCart.setVisibility(View.VISIBLE);
+            layoutCartContent.setVisibility(View.GONE);
+            View bottomAction = findViewById(R.id.bottomActionCard);
+            if (bottomAction != null) bottomAction.setVisibility(View.GONE);
+        } else {
+            layoutEmptyCart.setVisibility(View.GONE);
+            layoutCartContent.setVisibility(View.VISIBLE);
+            View bottomAction = findViewById(R.id.bottomActionCard);
+            if (bottomAction != null) bottomAction.setVisibility(View.VISIBLE);
+            renderCartItems();
+            calculateTotalPrice();
+        }
+    }
+
+    private void renderCartItems() {
+        if (containerCartItems == null) return;
+        containerCartItems.removeAllViews();
+        LayoutInflater inflater = LayoutInflater.from(this);
+        
+        for (CartItem item : cartItemList) {
+            View view = inflater.inflate(R.layout.item_cart, containerCartItems, false);
             
-            // Dữ liệu mẫu cho sản phẩm liên quan
-            int[] relatedImages = {R.drawable.iphone14, R.drawable.samsunga54, R.drawable.xiaomi14, R.drawable.oppofindx7};
-            String[] relatedNames = {"iPhone 14", "Samsung A54", "Xiaomi 14", "Oppo Find X7"};
-            String[] relatedPrices = {"16.490.000đ", "8.990.000đ", "19.990.000đ", "18.500.000đ"};
-
-            for (int i = 0; i < grid.getChildCount() && i < relatedImages.length; i++) {
-                View child = grid.getChildAt(i);
-                
-                // Gắn hình ảnh và dữ liệu vào item_related_small
-                ImageView img = child.findViewById(R.id.imgRelated);
-                TextView tvName = child.findViewById(R.id.tvRelatedName);
-                TextView tvPrice = child.findViewById(R.id.tvRelatedPrice);
-                
-                if (img != null) img.setImageResource(relatedImages[i]);
-                if (tvName != null) tvName.setText(relatedNames[i]);
-                if (tvPrice != null) tvPrice.setText(relatedPrices[i]);
-
-                final int index = i;
-                child.setOnClickListener(v -> {
-                    Intent intent = new Intent(CartActivity.this, DetailActivity.class);
-                    intent.putExtra("PRODUCT_NAME", relatedNames[index]);
-                    intent.putExtra("PRODUCT_PRICE", relatedPrices[index]);
-                    intent.putExtra("PRODUCT_IMAGE", relatedImages[index]);
-                    startActivity(intent);
+            CheckBox chk = view.findViewById(R.id.chkItem);
+            if (chk != null) {
+                chk.setChecked(item.isSelected());
+                chk.setOnClickListener(v -> {
+                    item.setSelected(chk.isChecked());
+                    updateItemSelectionInFirestore(item);
+                    updateSelectAllStatus();
+                    calculateTotalPrice();
                 });
             }
-        }
-    }
 
-    private static class CartItem {
-        String name, detail;
-        long price;
-        int quantity, imageRes;
-        boolean isSelected = true;
-        CartItem(String name, String detail, long price, int quantity, int imageRes) {
-            this.name = name; this.detail = detail; this.price = price; this.quantity = quantity; this.imageRes = imageRes;
-        }
-    }
+            ImageView img = view.findViewById(R.id.imgProduct);
+            Glide.with(this).load(item.getImageUrl()).placeholder(R.drawable.phone_mockup).into(img);
 
-    private class CartAdapter extends BaseAdapter {
-        @Override public int getCount() { return cartItemList.size(); }
-        @Override public Object getItem(int pos) { return cartItemList.get(pos); }
-        @Override public long getItemId(int pos) { return pos; }
-        @Override public View getView(int pos, View convertView, ViewGroup parent) {
-            if (convertView == null) convertView = LayoutInflater.from(CartActivity.this).inflate(R.layout.item_cart, parent, false);
-            CartItem item = cartItemList.get(pos);
+            ((TextView)view.findViewById(R.id.tvProductName)).setText(item.getName());
+            ((TextView)view.findViewById(R.id.tvProductDetail)).setText(item.getDetail());
+            ((TextView)view.findViewById(R.id.tvProductPrice)).setText(String.format(Locale.getDefault(), "%,dđ", item.getPrice()));
+            ((TextView)view.findViewById(R.id.tvQuantity)).setText(String.valueOf(item.getQuantity()));
             
-            ((CheckBox)convertView.findViewById(R.id.chkItem)).setChecked(item.isSelected);
-            ((ImageView)convertView.findViewById(R.id.imgProduct)).setImageResource(item.imageRes);
-            ((TextView)convertView.findViewById(R.id.tvProductName)).setText(item.name);
-            ((TextView)convertView.findViewById(R.id.tvProductDetail)).setText(item.detail);
-            ((TextView)convertView.findViewById(R.id.tvProductPrice)).setText(String.format(Locale.getDefault(), "%,dđ", item.price));
-            ((TextView)convertView.findViewById(R.id.tvQuantity)).setText(String.valueOf(item.quantity));
+            view.findViewById(R.id.btnMinus).setOnClickListener(v -> {
+                if (item.getQuantity() > 1) {
+                    item.setQuantity(item.getQuantity() - 1);
+                    ((TextView)view.findViewById(R.id.tvQuantity)).setText(String.valueOf(item.getQuantity()));
+                    updateItemQuantityInFirestore(item);
+                    calculateTotalPrice();
+                }
+            });
             
-            // Gắn link cho sản phẩm trong giỏ hàng để quay lại Detail
-            convertView.setOnClickListener(v -> {
-                Intent intent = new Intent(CartActivity.this, DetailActivity.class);
-                intent.putExtra("PRODUCT_NAME", item.name);
-                intent.putExtra("PRODUCT_PRICE", String.format(Locale.getDefault(), "%,dđ", item.price));
-                intent.putExtra("PRODUCT_IMAGE", item.imageRes);
+            view.findViewById(R.id.btnPlus).setOnClickListener(v -> {
+                item.setQuantity(item.getQuantity() + 1);
+                ((TextView)view.findViewById(R.id.tvQuantity)).setText(String.valueOf(item.getQuantity()));
+                updateItemQuantityInFirestore(item);
+                calculateTotalPrice();
+            });
+
+            view.findViewById(R.id.btnDelete).setOnClickListener(v -> {
+                deleteItemFromFirestore(item);
+            });
+
+            view.setOnClickListener(v -> {
+                Intent intent = new Intent(this, DetailActivity.class);
+                intent.putExtra("PRODUCT_ID", item.getProductId());
                 startActivity(intent);
             });
 
-            return convertView;
+            containerCartItems.addView(view);
         }
+        updateSelectAllStatus();
+    }
+
+    private void updateSelectAllStatus() {
+        if (cartItemList.isEmpty()) return;
+        boolean allSelected = true;
+        for (CartItem item : cartItemList) {
+            if (!item.isSelected()) {
+                allSelected = false;
+                break;
+            }
+        }
+        chkSelectAll.setChecked(allSelected);
+    }
+
+    private void calculateTotalPrice() {
+        long total = 0;
+        long saving = 0;
+        for (CartItem item : cartItemList) {
+            if (item.isSelected()) {
+                total += (item.getPrice() * item.getQuantity());
+                if (item.getOriginalPrice() > item.getPrice()) {
+                    saving += (item.getOriginalPrice() - item.getPrice()) * item.getQuantity();
+                }
+            }
+        }
+        if (tvTotalPrice != null) {
+            tvTotalPrice.setText(String.format(Locale.getDefault(), "%,dđ", total));
+        }
+        if (tvSavingPrice != null) {
+            tvSavingPrice.setText(String.format(Locale.getDefault(), "Tiết kiệm %,dđ", saving));
+        }
+    }
+
+    private void setupExploreMore() {
+        if (rvExploreMore == null) return;
+
+        exploreAdapter = new ProductAdapter(product -> {
+            Intent intent = new Intent(this, DetailActivity.class);
+            intent.putExtra("PRODUCT_ID", product.getId());
+            startActivity(intent);
+        });
+        
+        rvExploreMore.setLayoutManager(new GridLayoutManager(this, 2));
+        rvExploreMore.setAdapter(exploreAdapter);
+
+        db.collection("products")
+                .limit(10)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Product> products = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        Product p = doc.toObject(Product.class);
+                        p.setId(doc.getId());
+                        products.add(p);
+                    }
+                    if (!products.isEmpty()) {
+                        exploreAdapter.setData(products);
+                    }
+                });
     }
 }

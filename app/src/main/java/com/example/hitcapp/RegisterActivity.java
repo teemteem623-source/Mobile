@@ -3,7 +3,6 @@ package com.example.hitcapp;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.CheckBox;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -11,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -19,6 +20,7 @@ public class RegisterActivity extends AppCompatActivity {
     private TextInputEditText edtUsername, edtEmail, edtPassword, edtConfirmPassword;
     private CheckBox chkAgree;
     private MaterialButton btnRegister;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,13 +28,14 @@ public class RegisterActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_register);
 
+        mAuth = FirebaseAuth.getInstance();
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        // Ánh xạ View
         edtUsername = findViewById(R.id.edtUsername);
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
@@ -61,22 +64,28 @@ public class RegisterActivity extends AppCompatActivity {
                 return;
             }
 
-            // Lưu tài khoản mới
-            AccountStorage.User newUser = new AccountStorage.User(username, email, password);
-            AccountStorage.saveUser(this, newUser);
+            btnRegister.setEnabled(false);
+            btnRegister.setText("ĐANG ĐĂNG KÝ...");
 
-            Toast.makeText(this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show();
-
-            // Quay về MainActivity và truyền dữ liệu
-            Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
-            intent.putExtra("REGISTERED_USER", email); // Hoặc username
-            startActivity(intent);
-            finish();
+            mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        mAuth.signOut();
+                        Toast.makeText(RegisterActivity.this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show();
+                        
+                        Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                        intent.putExtra("REGISTERED_EMAIL", email);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        btnRegister.setEnabled(true);
+                        btnRegister.setText("ĐĂNG KÝ");
+                        Toast.makeText(RegisterActivity.this, "Lỗi: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
         });
 
-        TextView tvLoginNow = findViewById(R.id.tvLoginNow);
-        tvLoginNow.setOnClickListener(v -> {
-            finish();
-        });
+        findViewById(R.id.tvLoginNow).setOnClickListener(v -> finish());
     }
 }

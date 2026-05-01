@@ -78,7 +78,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:hint="User hoặc Email"
-        android:textColorHint="#444444"
         app:boxCornerRadiusBottomEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusTopEnd="12dp"
@@ -110,7 +109,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:hint="Mật khẩu"
-        android:textColorHint="#444444"
         app:passwordToggleEnabled="true"
         app:boxCornerRadiusBottomEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"
@@ -197,42 +195,36 @@
         <View android:layout_width="80dp" android:layout_height="1dp" android:background="#CBD5E1"/>
     </LinearLayout>
 
-    <!-- ===== SOCIAL ICONS ===== -->
-    <LinearLayout
-        android:id="@+id/layoutSocial"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="12dp"
+    <!-- ===== GOOGLE LOGIN BUTTON ===== -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnGoogleLogin"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="320dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="16dp"
+        android:text="Đăng nhập bằng Google"
+        android:textAllCaps="false"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="12dp"
+        app:icon="@drawable/goole"
+        app:iconGravity="textStart"
+        app:iconSize="24dp"
+        app:iconTint="@null"
         app:layout_constraintTop_toBottomOf="@id/layoutOr"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:strokeColor="#CBD5E1"
+        app:strokeWidth="1dp" />
 
-        <ImageView
-            android:id="@+id/imageView2"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:padding="8dp"
-            android:background="@drawable/facebook"
-            android:contentDescription="Facebook" />
-
-        <ImageView
-            android:id="@+id/imageView3"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="24dp"
-            android:padding="8dp"
-            android:background="@drawable/goole"
-            android:contentDescription="Google" />
-    </LinearLayout>
-
-    <!-- ===== REGISTER ===== -->
+    <!-- ===== REGISTER (Nằm ngay dưới Google) ===== -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/layoutSocial"
+        app:layout_constraintTop_toBottomOf="@id/btnGoogleLogin"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 

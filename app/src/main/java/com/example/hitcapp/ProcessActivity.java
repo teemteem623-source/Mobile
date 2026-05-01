@@ -24,13 +24,13 @@ public class ProcessActivity extends AppCompatActivity {
 
         // --- XỬ LÝ SAFE AREA ---
         View mainView = findViewById(R.id.main);
-        View topBar = findViewById(R.id.topBarCard);
+        View topBar = findViewById(R.id.topBar);
         
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                 if (topBar != null) {
-                    topBar.setPadding(0, systemBars.top + (int)(20 * getResources().getDisplayMetrics().density), 0, 10);
+                    topBar.setPadding(0, systemBars.top, 0, 0);
                 }
                 return WindowInsetsCompat.CONSUMED;
             });

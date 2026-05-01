@@ -1,7 +1,6 @@
 package com.example.hitcapp;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,10 +16,18 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Update_AddressActivity extends AppCompatActivity {
 
-    private TextInputEditText edtName, edtPhone, edtCity, edtDistrict, edtWard, edtDetail;
+    private TextInputEditText edtName, edtPhone, edtCity, edtWard, edtDetail;
+    private String userId;
+    private AddressActivity.AddressItem currentItem;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +35,90 @@ public class Update_AddressActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_update_address);
 
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            finish();
+            return;
+        }
+
+        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        db = FirebaseFirestore.getInstance();
+
+        initViews();
+        setupWindowInsets();
+
+        currentItem = (AddressActivity.AddressItem) getIntent().getSerializableExtra("ADDRESS_ITEM");
+        if (currentItem != null) {
+            edtName.setText(currentItem.name);
+            edtPhone.setText(currentItem.phone);
+            
+            // Tách chuỗi địa chỉ cũ để hiển thị lên 3 ô
+            String fullAddress = currentItem.address;
+            if (fullAddress != null && fullAddress.contains(", ")) {
+                String[] parts = fullAddress.split(", ");
+                if (parts.length >= 3) {
+                    edtDetail.setText(parts[0]);
+                    edtWard.setText(parts[1]);
+                    edtCity.setText(parts[2]);
+                } else {
+                    edtDetail.setText(fullAddress);
+                }
+            } else {
+                edtDetail.setText(fullAddress);
+            }
+        }
+    }
+
+    private void initViews() {
+        edtName = findViewById(R.id.edtName);
+        edtPhone = findViewById(R.id.edtPhone);
+        edtCity = findViewById(R.id.edtCity);
+        edtWard = findViewById(R.id.edtWard);
+        edtDetail = findViewById(R.id.edtDetail);
+
+        ImageView btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
+
+        MaterialButton btnUpdate = findViewById(R.id.btnUpdate);
+        btnUpdate.setOnClickListener(v -> updateAddress());
+    }
+
+    private void updateAddress() {
+        if (currentItem == null || currentItem.id == null) {
+            Toast.makeText(this, "Không tìm thấy thông tin địa chỉ để cập nhật!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String name = edtName.getText().toString().trim();
+        String phone = edtPhone.getText().toString().trim();
+        String city = edtCity.getText().toString().trim();
+        String ward = edtWard.getText().toString().trim();
+        String detail = edtDetail.getText().toString().trim();
+
+        if (name.isEmpty() || phone.isEmpty() || city.isEmpty() || ward.isEmpty() || detail.isEmpty()) {
+            Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Ghép lại thành chuỗi địa chỉ đầy đủ như Add_AddressActivity
+        String fullAddress = detail + ", " + ward + ", " + city;
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("fullname", name);
+        updates.put("phone", phone);
+        updates.put("address", fullAddress);
+        updates.put("userId", userId);
+
+        db.collection("address").document(currentItem.id).update(updates).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Toast.makeText(this, "Cập nhật địa chỉ thành công!", Toast.LENGTH_SHORT).show();
+                finish();
+            } else {
+                Toast.makeText(this, "Lỗi cập nhật: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void setupWindowInsets() {
         View mainView = findViewById(R.id.main);
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
@@ -36,60 +127,8 @@ public class Update_AddressActivity extends AppCompatActivity {
                 return insets;
             });
         }
-
-        // --- ÁNH XẠ ---
-        edtName = findViewById(R.id.edtName);
-        edtPhone = findViewById(R.id.edtPhone);
-        edtCity = findViewById(R.id.edtCity);
-        edtDistrict = findViewById(R.id.edtDistrict);
-        edtWard = findViewById(R.id.edtWard);
-        edtDetail = findViewById(R.id.edtDetail);
-
-        // --- NHẬN DỮ LIỆU CŨ ---
-        Intent intent = getIntent();
-        if (intent != null) {
-            edtName.setText(intent.getStringExtra("NAME"));
-            edtPhone.setText(intent.getStringExtra("PHONE"));
-            edtCity.setText(intent.getStringExtra("CITY"));
-            edtDistrict.setText(intent.getStringExtra("DISTRICT"));
-            edtWard.setText(intent.getStringExtra("WARD"));
-            edtDetail.setText(intent.getStringExtra("DETAIL"));
-        }
-
-        // --- TOP BAR LOGIC ---
-        ImageView btnBack = findViewById(R.id.btnBack);
-        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
-
-        // --- UPDATE LOGIC ---
-        MaterialButton btnUpdate = findViewById(R.id.btnUpdate);
-        btnUpdate.setOnClickListener(v -> {
-            String name = edtName.getText().toString().trim();
-            String phone = edtPhone.getText().toString().trim();
-            String city = edtCity.getText().toString().trim();
-            String district = edtDistrict.getText().toString().trim();
-            String ward = edtWard.getText().toString().trim();
-            String detail = edtDetail.getText().toString().trim();
-
-            if (name.isEmpty() || phone.isEmpty() || city.isEmpty() || district.isEmpty() || ward.isEmpty() || detail.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập đầy đủ tất cả các trường!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            Intent resultIntent = new Intent();
-            resultIntent.putExtra("NAME", name);
-            resultIntent.putExtra("PHONE", phone);
-            resultIntent.putExtra("CITY", city);
-            resultIntent.putExtra("DISTRICT", district);
-            resultIntent.putExtra("WARD", ward);
-            resultIntent.putExtra("DETAIL", detail);
-            
-            setResult(RESULT_OK, resultIntent);
-            Toast.makeText(this, "Cập nhật địa chỉ thành công!", Toast.LENGTH_SHORT).show();
-            finish();
-        });
     }
 
-    // --- ẨN BÀN PHÍM VÀ MẤT FOCUS KHI NHẤN RA NGOÀI VÙNG NHẬP LIỆU ---
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         View v = getCurrentFocus();

@@ -1,20 +1,29 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.HITCApp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
+        <item name="colorPrimary">#1E40AF</item>
+        <!-- Màu icon và chữ khi được chọn (trong Active Indicator) -->
+        <item name="colorOnSurfaceVariant">#64748B</item>
+        <item name="colorOnSecondaryContainer">#FFFFFF</item>
     </style>
 
     <style name="Theme.HITCApp" parent="Base.Theme.HITCApp" />
 
-    <!-- Style cho chữ gợi ý đậm -->
     <style name="BoldHintText" parent="TextAppearance.Design.Hint">
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">#000000</item>
         <item name="android:textSize">14sp</item>
     </style>
 
-    <!-- Style cho Indicator của Bottom Navigation (Màu xanh nước bao quanh icon) -->
+    <!-- Style cho Custom Bottom Navigation Indicator (Pill màu xanh đậm) -->
     <style name="App.Custom.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">#1E40AF</item>
+        <item name="android:color">#1E40AF</item> <!-- Màu xanh đậm highlight -->
+        <item name="android:width">56dp</item>
+        <item name="android:height">32dp</item>
+    </style>
+
+    <style name="CircleImage" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
     </style>
 </resources>
