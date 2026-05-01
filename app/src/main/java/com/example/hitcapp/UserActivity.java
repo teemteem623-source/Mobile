@@ -100,10 +100,9 @@ public class UserActivity extends AppCompatActivity {
                 if (!TextUtils.isEmpty(memberRank)) {
                     tvMembership.setText(memberRank);
                 }
-
-                calculateAndUpdateMembership();
             }
         });
+        calculateAndUpdateMembership();
     }
 
     private void calculateAndUpdateMembership() {
@@ -133,9 +132,11 @@ public class UserActivity extends AppCompatActivity {
 
     private void updateMembershipUI(long totalSpent) {
         String level;
-        if (totalSpent > 40000000) {
-            level = "Thành viên Kim cương";
+        if (totalSpent >= 100000000) {
+            level = "Thượng đế";
         } else if (totalSpent >= 40000000) {
+            level = "Thành viên Kim cương";
+        } else if (totalSpent >= 30000000) {
             level = "Thành viên Vàng";
         } else if (totalSpent >= 20000000) {
             level = "Thành viên Bạc";

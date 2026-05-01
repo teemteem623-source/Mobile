@@ -56,7 +56,6 @@ public class ProfileActivity extends AppCompatActivity {
         initViews();
         setupWindowInsets();
         fetchProfileData();
-        calculateAndUpdateMembership(); // Khởi chạy tính toán cấp bậc
     }
 
     private void initViews() {
@@ -97,49 +96,6 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             }
         });
-    }
-
-    private void calculateAndUpdateMembership() {
-        mFirestore.collection("orders")
-                .whereEqualTo("userId", userId)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) return;
-
-                    if (value != null) {
-                        long totalSpent = 0;
-                        for (QueryDocumentSnapshot doc : value) {
-                            String status = doc.getString("status");
-                            // Không tính đơn hàng đã hủy
-                            if (!"Đã hủy".equals(status) && !"Cancelled".equals(status)) {
-                                Long price = doc.getLong("totalPrice");
-                                if (price != null) {
-                                    totalSpent += price;
-                                }
-                            }
-                        }
-                        updateMembershipUI(totalSpent);
-                    }
-                });
-    }
-
-    private void updateMembershipUI(long totalSpent) {
-        String level;
-        if (totalSpent > 40000000) {
-            level = "Thành viên Kim cương";
-        } else if (totalSpent >= 40000000) {
-            level = "Thành viên Vàng";
-        } else if (totalSpent >= 20000000) {
-            level = "Thành viên Bạc";
-        } else {
-            level = "Thành viên Đồng";
-        }
-
-        tvMembership.setText(level);
-        
-        // Cập nhật lại vào bảng profiles để đồng bộ
-        Map<String, Object> update = new HashMap<>();
-        update.put("memberRank", level);
-        mFirestore.collection("profiles").document(userId).update(update);
     }
 
     @Override
