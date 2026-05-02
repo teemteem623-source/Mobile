@@ -147,70 +147,54 @@
                 <!-- Dynamic items injected here -->
             </LinearLayout>
 
-            <!-- SHIPPING ESTIMATE -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="#F8FAFF"
-                android:padding="12dp"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Dự kiến nhận hàng trong 2-3 ngày"
-                    android:textColor="#444444"
-                    android:textSize="13sp" />
-                <TextView
-                    android:id="@+id/tvShippingFeeDisplay"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Miễn phí"
-                    android:textColor="#00B5AD"
-                    android:textStyle="bold"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
             <!-- VOUCHERS -->
             <LinearLayout
-                android:id="@+id/btnOpenVoucher"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:background="#FFFFFF"
-                android:padding="16dp"
-                android:gravity="center_vertical">
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/voucher" />
-                <TextView
-                    android:layout_width="0dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/btnOpenVoucher"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:text="Voucher của TTshop"
-                    android:textColor="#000000"
-                    android:textSize="14sp" />
-                <TextView
-                    android:id="@+id/tvSelectedVoucherName"
-                    android:layout_width="wrap_content"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/voucher" />
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:text="Voucher của TTshop"
+                        android:textColor="#000000"
+                        android:textSize="14sp" />
+                    <TextView
+                        android:id="@+id/tvVoucherCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Chọn voucher"
+                        android:textColor="#94A3B8"
+                        android:textSize="13sp"
+                        android:layout_marginEnd="8dp"/>
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/next"
+                        app:tint="#94A3B8" />
+                </LinearLayout>
+
+                <!-- Container for selected vouchers list -->
+                <LinearLayout
+                    android:id="@+id/containerSelectedVouchers"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Freeship"
-                    android:background="#EFFFFB"
-                    android:textColor="#00B5AD"
-                    android:textSize="12sp"
-                    android:paddingHorizontal="6dp"
-                    android:paddingVertical="2dp"
-                    android:layout_marginEnd="8dp"/>
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:src="@drawable/next"
-                    app:tint="#94A3B8" />
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"/>
             </LinearLayout>
 
             <!-- SUMMARY -->
@@ -237,13 +221,8 @@
                 </RelativeLayout>
 
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Giảm giá sản phẩm" android:textColor="#000000" android:textSize="14sp"/>
-                    <TextView android:id="@+id/tvProductDiscount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="-0đ" android:textColor="#E11D48"/>
-                </RelativeLayout>
-
-                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Phí vận chuyển" android:textColor="#000000" android:textSize="14sp"/>
-                    <TextView android:id="@+id/tvShippingFee" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="30.000đ" android:textColor="#000000"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Phí vận chuyển (1%)" android:textColor="#000000" android:textSize="14sp"/>
+                    <TextView android:id="@+id/tvShippingFee" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="0đ" android:textColor="#000000"/>
                 </RelativeLayout>
 
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">

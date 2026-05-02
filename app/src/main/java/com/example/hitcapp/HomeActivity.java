@@ -29,6 +29,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.bumptech.glide.Glide;
 import com.example.hitcapp.adapters.ProductAdapter;
 import com.example.hitcapp.models.Product;
+import com.example.hitcapp.utils.VoucherService;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
@@ -52,6 +53,7 @@ public class HomeActivity extends AppCompatActivity {
     private ProductAdapter featuredAdapter, newAdapter, saleAdapter;
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private VoucherService voucherService;
     private Handler bannerHandler = new Handler();
     private Runnable bannerRunnable;
 
@@ -63,6 +65,12 @@ public class HomeActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
+        voucherService = new VoucherService();
+        
+        // KIỂM TRA VÀ PHÁT VOUCHER MẶC ĐỊNH CHO NGƯỜI DÙNG (CHỈ MỘT LẦN)
+        if (auth.getCurrentUser() != null) {
+            voucherService.addInitialVouchers(this, auth.getUid());
+        }
         
         initViews();
         setupInsets();

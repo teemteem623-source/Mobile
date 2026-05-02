@@ -15,7 +15,8 @@ public class Order implements Serializable {
     private int quantity;
     private String shippingAddress;
     private String status;
-    private long totalPrice;
+    private long totalPrice; // Giá gốc (tổng tiền hàng)
+    private long finalPrice; // Giá cuối cùng sau khi áp mã và phí ship
     private Timestamp createAt;
     
     // Các trường bổ sung để khớp với OrderDetailActivity và PaymentActivity
@@ -56,6 +57,9 @@ public class Order implements Serializable {
     public long getTotalPrice() { return totalPrice; }
     public void setTotalPrice(long totalPrice) { this.totalPrice = totalPrice; }
 
+    public long getFinalPrice() { return finalPrice; }
+    public void setFinalPrice(long finalPrice) { this.finalPrice = finalPrice; }
+
     public Timestamp getCreateAt() { return createAt; }
     public void setCreateAt(Timestamp createAt) { this.createAt = createAt; }
 
@@ -74,7 +78,9 @@ public class Order implements Serializable {
     // Các phương thức trợ giúp để tương thích với Activity
     public Timestamp getTimestamp() { return createAt; }
     
-    public long getTotalAmount() { return totalPrice + shippingFee; }
+    public long getTotalAmount() { 
+        return finalPrice > 0 ? finalPrice : (totalPrice + shippingFee); 
+    }
     
     public String getAddress() { return shippingAddress; }
 

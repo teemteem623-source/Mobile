@@ -3,6 +3,7 @@ package com.example.hitcapp;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,9 +22,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.chip.ChipGroup;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class NoticeActivity extends AppCompatActivity {
 
@@ -32,6 +39,9 @@ public class NoticeActivity extends AppCompatActivity {
     private NoticeAdapter adapter;
     private LinearLayout tabHome, tabProduct, tabNotification, tabProfile;
     private SwipeRefreshLayout swipeRefresh;
+    
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,23 +49,24 @@ public class NoticeActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notice);
 
+        db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
+
         initViews();
         setupInsets();
         initCustomBottomNav();
         setupRecyclerView();
         setupChips();
         
-        initData();
-        swipeRefresh.setOnRefreshListener(() -> {
-            initData();
-            swipeRefresh.setRefreshing(false);
-        });
+        loadNoticesFromFirestore();
+        swipeRefresh.setOnRefreshListener(this::loadNoticesFromFirestore);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (tabNotification != null) selectTab(tabNotification);
+        loadNoticesFromFirestore();
     }
 
     private void initViews() {
@@ -153,13 +164,65 @@ public class NoticeActivity extends AppCompatActivity {
         rvNotices.setAdapter(adapter);
     }
 
-    private void initData() {
-        fullNoticeList.clear();
+    private void loadNoticesFromFirestore() {
+        if (auth.getCurrentUser() == null) {
+            if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
+            return;
+        }
+
+        db.collection("notifications")
+                .whereEqualTo("userId", auth.getUid())
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    fullNoticeList.clear();
+                    
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        String title = doc.getString("title");
+                        String content = doc.getString("content");
+                        String category = doc.getString("category");
+                        com.google.firebase.Timestamp ts = doc.getTimestamp("timestamp");
+                        
+                        String time = "Vừa xong";
+                        if (ts != null) {
+                            time = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(ts.toDate());
+                        }
+
+                        int icon = android.R.drawable.ic_popup_reminder;
+                        String color = "#8B5CF6";
+                        if ("Khuyến mãi".equals(category)) {
+                            icon = android.R.drawable.ic_menu_send;
+                            color = "#E11D48";
+                        } else if ("Đơn hàng".equals(category)) {
+                            icon = android.R.drawable.ic_menu_save;
+                            color = "#3B82F6";
+                        } else if ("Hệ thống".equals(category)) {
+                            icon = android.R.drawable.ic_menu_add;
+                            color = "#10B981";
+                        }
+                        
+                        fullNoticeList.add(new NoticeItem(title, content, icon, color, category, time));
+                    }
+                    
+                    if (fullNoticeList.isEmpty()) {
+                        addPlaceholderNotices();
+                    }
+                    
+                    adapter.updateList(new ArrayList<>(fullNoticeList));
+                    if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("NoticeActivity", "Lỗi tải thông báo: " + e.getMessage());
+                    if (fullNoticeList.isEmpty()) addPlaceholderNotices();
+                    adapter.updateList(new ArrayList<>(fullNoticeList));
+                    if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
+                });
+    }
+
+    private void addPlaceholderNotices() {
         fullNoticeList.add(new NoticeItem("Siêu ưu đãi cuối tuần", "Giảm giá 50% cho tất cả dòng iPhone tại cửa hàng. Duy nhất Chủ nhật này!", android.R.drawable.ic_menu_send, "#E11D48", "Khuyến mãi", "10:30"));
         fullNoticeList.add(new NoticeItem("Đơn hàng đang đến", "Đơn hàng #TT9988 đang được nhân viên giao hàng vận chuyển đến bạn.", android.R.drawable.ic_menu_save, "#3B82F6", "Đơn hàng", "09:15"));
         fullNoticeList.add(new NoticeItem("Ví của bạn đã được nạp tiền", "Bạn vừa nạp thành công 500.000đ vào ví TT-Pay.", android.R.drawable.ic_menu_add, "#10B981", "Hệ thống", "Hôm qua"));
-        fullNoticeList.add(new NoticeItem("Cập nhật ứng dụng", "HitcApp đã có phiên bản mới với nhiều tính năng hấp dẫn. Cập nhật ngay!", android.R.drawable.ic_popup_reminder, "#8B5CF6", "Hệ thống", "12/12"));
-        adapter.updateList(new ArrayList<>(fullNoticeList));
     }
 
     private void setupChips() {

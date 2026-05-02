@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -20,22 +21,47 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.hitcapp.models.Voucher;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class VoucherActivity extends AppCompatActivity {
 
     private RecyclerView rvShipping, rvProduct;
-    private List<VoucherItem> shippingList = new ArrayList<>();
-    private List<VoucherItem> productList = new ArrayList<>();
+    private final List<Voucher> shippingList = new ArrayList<>();
+    private final List<Voucher> productList = new ArrayList<>();
+    private VoucherAdapter shippingAdapter, productAdapter;
+    
+    private Voucher selectedShippingVoucher;
+    private Voucher selectedProductVoucher;
+
     private TextView tvStatus;
     private EditText edtCode;
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_voucher);
+
+        db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
+
+        // Nhận voucher đã chọn từ PaymentActivity
+        if (getIntent().hasExtra("PRE_SELECTED_SHIPPING")) {
+            selectedShippingVoucher = (Voucher) getIntent().getSerializableExtra("PRE_SELECTED_SHIPPING");
+        }
+        if (getIntent().hasExtra("PRE_SELECTED_PRODUCT")) {
+            selectedProductVoucher = (Voucher) getIntent().getSerializableExtra("PRE_SELECTED_PRODUCT");
+        }
 
         View mainView = findViewById(R.id.main);
         if (mainView != null) {
@@ -51,26 +77,7 @@ public class VoucherActivity extends AppCompatActivity {
 
         edtCode = findViewById(R.id.edtVoucherCode);
         tvStatus = findViewById(R.id.tvCodeStatus);
-        findViewById(R.id.btnApplyCode).setOnClickListener(v -> {
-            String code = edtCode.getText().toString().trim();
-            if (code.equalsIgnoreCase("TTVIP")) {
-                tvStatus.setVisibility(View.VISIBLE);
-                tvStatus.setText("Áp dụng mã thành công: Giảm 100k");
-                tvStatus.setTextColor(Color.parseColor("#10B981")); 
-                
-                Intent resultIntent = new Intent();
-                resultIntent.putExtra("VOUCHER_NAME", "Mã TTVIP (-100k)");
-                resultIntent.putExtra("VOUCHER_DISCOUNT", 100000L);
-                setResult(RESULT_OK, resultIntent);
-                finish();
-            } else {
-                tvStatus.setVisibility(View.VISIBLE);
-                tvStatus.setText("Mã không hợp lệ hoặc đã hết hạn sử dụng");
-                tvStatus.setTextColor(Color.parseColor("#EF4444")); 
-            }
-        });
-
-        initData();
+        findViewById(R.id.btnApplyCode).setOnClickListener(v -> applyVoucherCode());
 
         rvShipping = findViewById(R.id.rvShippingVouchers);
         rvProduct = findViewById(R.id.rvProductVouchers);
@@ -78,31 +85,87 @@ public class VoucherActivity extends AppCompatActivity {
         rvShipping.setLayoutManager(new LinearLayoutManager(this));
         rvProduct.setLayoutManager(new LinearLayoutManager(this));
 
-        rvShipping.setAdapter(new VoucherAdapter(shippingList));
-        rvProduct.setAdapter(new VoucherAdapter(productList));
+        shippingAdapter = new VoucherAdapter(shippingList, true);
+        productAdapter = new VoucherAdapter(productList, false);
+
+        rvShipping.setAdapter(shippingAdapter);
+        rvProduct.setAdapter(productAdapter);
+
+        findViewById(R.id.btnConfirmVoucher).setOnClickListener(v -> {
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("SELECTED_SHIPPING", selectedShippingVoucher);
+            resultIntent.putExtra("SELECTED_PRODUCT", selectedProductVoucher);
+            setResult(RESULT_OK, resultIntent);
+            finish();
+        });
+
+        loadVouchers();
     }
 
-    private void initData() {
-        shippingList.add(new VoucherItem("Freeship 15k", "Đơn từ 50k", android.R.drawable.ic_menu_send, "#3B82F6", 15000));
-        shippingList.add(new VoucherItem("Freeship 30k", "Đơn từ 150k", android.R.drawable.ic_menu_send, "#3B82F6", 30000));
-        shippingList.add(new VoucherItem("Freeship Extra", "Tối đa 50k cho đơn từ 300k", android.R.drawable.ic_menu_send, "#3B82F6", 50000));
+    private void applyVoucherCode() {
+        String code = edtCode.getText().toString().trim();
+        if (code.isEmpty()) return;
 
-        productList.add(new VoucherItem("Giảm 50k", "Đơn từ 500k", android.R.drawable.ic_menu_save, "#F43F5E", 50000));
-        productList.add(new VoucherItem("Giảm 100k", "Đơn từ 2 triệu", android.R.drawable.ic_menu_save, "#F43F5E", 100000));
-        productList.add(new VoucherItem("Giảm 10%", "Tối đa 200k cho iPhone", android.R.drawable.ic_menu_save, "#F43F5E", 200000));
-        productList.add(new VoucherItem("Giảm 500k", "Đơn từ 10 triệu", android.R.drawable.ic_menu_save, "#F43F5E", 500000));
+        db.collection("vouchers")
+                .whereEqualTo("code", code)
+                .whereEqualTo("used", false)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        QueryDocumentSnapshot doc = (QueryDocumentSnapshot) queryDocumentSnapshots.getDocuments().get(0);
+                        Voucher v = doc.toObject(Voucher.class);
+                        v.setId(doc.getId());
+                        
+                        if (v.getType().equals(Voucher.TYPE_SHIPPING)) {
+                            selectedShippingVoucher = v;
+                            shippingAdapter.notifyDataSetChanged();
+                        } else {
+                            selectedProductVoucher = v;
+                            productAdapter.notifyDataSetChanged();
+                        }
+                        tvStatus.setVisibility(View.VISIBLE);
+                        tvStatus.setText("Áp dụng mã thành công!");
+                        tvStatus.setTextColor(Color.parseColor("#10B981"));
+                    } else {
+                        tvStatus.setVisibility(View.VISIBLE);
+                        tvStatus.setText("Mã không hợp lệ hoặc đã hết hạn");
+                        tvStatus.setTextColor(Color.parseColor("#EF4444"));
+                    }
+                });
     }
 
-    private static class VoucherItem {
-        String title, desc, colorHex;
-        int icon;
-        long discountValue;
-        VoucherItem(String t, String d, int i, String c, long dv) { title = t; desc = d; icon = i; colorHex = c; discountValue = dv; }
+    private void loadVouchers() {
+        if (auth.getUid() == null) return;
+        db.collection("vouchers")
+                .whereEqualTo("userId", auth.getUid())
+                .whereEqualTo("used", false)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    shippingList.clear();
+                    productList.clear();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        Voucher v = doc.toObject(Voucher.class);
+                        v.setId(doc.getId());
+                        if (v.getType().equals(Voucher.TYPE_SHIPPING)) {
+                            shippingList.add(v);
+                        } else {
+                            productList.add(v);
+                        }
+                    }
+                    shippingAdapter.notifyDataSetChanged();
+                    productAdapter.notifyDataSetChanged();
+                });
     }
 
     private class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.ViewHolder> {
-        private List<VoucherItem> list;
-        VoucherAdapter(List<VoucherItem> list) { this.list = list; }
+        private final List<Voucher> list;
+        private final boolean isShipping;
+        private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
+        VoucherAdapter(List<Voucher> list, boolean isShipping) {
+            this.list = list;
+            this.isShipping = isShipping;
+        }
 
         @NonNull @Override public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_voucher, parent, false);
@@ -110,33 +173,51 @@ public class VoucherActivity extends AppCompatActivity {
         }
 
         @Override public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            VoucherItem item = list.get(position);
-            holder.tvTitle.setText(item.title);
-            holder.tvDesc.setText(item.desc);
-            holder.imgIcon.setImageResource(item.icon);
-            holder.layoutIcon.setBackgroundColor(Color.parseColor(item.colorHex));
+            Voucher item = list.get(position);
+            holder.tvTitle.setText(item.getTitle());
+            holder.tvDesc.setText(item.getDescription());
             
-            holder.btnApply.setOnClickListener(v -> {
-                Intent resultIntent = new Intent();
-                resultIntent.putExtra("VOUCHER_NAME", item.title);
-                resultIntent.putExtra("VOUCHER_DISCOUNT", item.discountValue);
-                setResult(RESULT_OK, resultIntent);
-                finish();
+            if (item.getExpiryTimestamp() > 0) {
+                holder.tvExpiry.setText(String.format("HSD: %s", sdf.format(item.getExpiryTimestamp())));
+            }
+
+            final boolean isCurrentlySelected;
+            if (isShipping) {
+                isCurrentlySelected = selectedShippingVoucher != null && selectedShippingVoucher.getId() != null && selectedShippingVoucher.getId().equals(item.getId());
+            } else {
+                isCurrentlySelected = selectedProductVoucher != null && selectedProductVoucher.getId() != null && selectedProductVoucher.getId().equals(item.getId());
+            }
+            
+            holder.cbSelect.setChecked(isCurrentlySelected);
+
+            holder.itemView.setOnClickListener(v -> {
+                if (isShipping) {
+                    if (isCurrentlySelected) {
+                        selectedShippingVoucher = null;
+                    } else {
+                        selectedShippingVoucher = item;
+                    }
+                } else {
+                    if (isCurrentlySelected) {
+                        selectedProductVoucher = null;
+                    } else {
+                        selectedProductVoucher = item;
+                    }
+                }
+                notifyDataSetChanged();
             });
         }
 
         @Override public int getItemCount() { return list.size(); }
 
         class ViewHolder extends RecyclerView.ViewHolder {
-            TextView tvTitle, tvDesc, btnApply;
-            ImageView imgIcon;
-            View layoutIcon;
+            TextView tvTitle, tvDesc, tvExpiry;
+            CheckBox cbSelect;
             ViewHolder(View v) { super(v);
                 tvTitle = v.findViewById(R.id.tvVoucherTitle);
                 tvDesc = v.findViewById(R.id.tvVoucherDesc);
-                imgIcon = v.findViewById(R.id.imgVoucherIcon);
-                layoutIcon = v.findViewById(R.id.layoutIcon);
-                btnApply = v.findViewById(R.id.btnApply);
+                tvExpiry = v.findViewById(R.id.tvExpiry);
+                cbSelect = v.findViewById(R.id.cbSelect);
             }
         }
     }

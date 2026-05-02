@@ -14,6 +14,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.hitcapp.utils.VoucherService;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -32,6 +33,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
     private FirebaseFirestore mFirestore;
+    private VoucherService voucherService;
 
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN = 9001;
@@ -56,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mDatabase = FirebaseDatabase.getInstance().getReference().child("Users");
         mFirestore = FirebaseFirestore.getInstance();
+        voucherService = new VoucherService();
 
         initViews();
         handleIntent(getIntent());
@@ -67,14 +71,10 @@ public class MainActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
 
-        // XỬ LÝ ĐẨY GIAO DIỆN KHI HIỆN BÀN PHÍM
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
-            
-            // Nếu bàn phím hiện lên, dùng chiều cao bàn phím, ngược lại dùng chiều cao thanh điều hướng
             int bottomPadding = Math.max(systemBars.bottom, imeInsets.bottom);
-            
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, bottomPadding);
             return insets;
         });
@@ -162,30 +162,37 @@ public class MainActivity extends AppCompatActivity {
         if (user == null) return;
 
         Toast.makeText(MainActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+        
+        String uid = user.getUid();
+        
+        // Cấp phát voucher ngay khi đăng nhập
+        voucherService.addInitialVouchers(this, uid);
+
         startActivity(new Intent(MainActivity.this, HomeActivity.class));
         finish();
 
-        String uid = user.getUid();
         mDatabase.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) {
-                    Map<String, Object> userMap = new HashMap<>();
-                    String name = user.getDisplayName();
-                    if (TextUtils.isEmpty(name)) name = "Người dùng";
+                Map<String, Object> userMap = new HashMap<>();
+                String name = user.getDisplayName();
+                if (TextUtils.isEmpty(name)) name = "Người dùng";
 
-                    userMap.put("uid", uid);
-                    userMap.put("email", user.getEmail());
-                    userMap.put("username", name);
-                    userMap.put("fullname", name);
+                userMap.put("uid", uid);
+                userMap.put("email", user.getEmail());
+                userMap.put("username", name);
+                userMap.put("fullname", name);
+                
+                if (!snapshot.exists()) {
                     userMap.put("totalSpent", 0);
                     userMap.put("phone", "");
                     userMap.put("memberRank", "Thành viên Đồng");
                     userMap.put("avatarUrl", user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "");
-
                     mDatabase.child(uid).setValue(userMap);
-                    mFirestore.collection("users").document(uid).set(userMap);
                 }
+                
+                // SỬ DỤNG SetOptions.merge() ĐỂ KHÔNG GHI ĐÈ LÀM MẤT FLAG VOUCHER
+                mFirestore.collection("users").document(uid).set(userMap, SetOptions.merge());
             }
 
             @Override
