@@ -234,10 +234,30 @@ public class DetailActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btnBuyNow).setOnClickListener(v -> {
-            if (currentProduct == null) return;
+            if (currentProduct == null) {
+                Toast.makeText(this, "Đang tải thông tin sản phẩm...", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (auth.getCurrentUser() == null) {
+                Toast.makeText(this, "Vui lòng đăng nhập để mua hàng", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            ArrayList<CartItem> selectedItems = new ArrayList<>();
+            CartItem item = new CartItem(
+                    auth.getUid(),
+                    currentProduct.getId(),
+                    currentProduct.getName(),
+                    currentProduct.getCategory(),
+                    currentProduct.getPrice(),
+                    currentProduct.getOriginalPrice(),
+                    quantity,
+                    currentProduct.getImageUrl()
+            );
+            selectedItems.add(item);
+
             Intent intent = new Intent(this, PaymentActivity.class);
-            intent.putExtra("PRODUCT_ID", currentProduct.getId());
-            intent.putExtra("QUANTITY", quantity);
+            intent.putExtra("SELECTED_ITEMS_DATA", selectedItems);
             startActivity(intent);
         });
     }

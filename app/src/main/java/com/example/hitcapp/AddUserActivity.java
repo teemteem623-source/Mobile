@@ -27,22 +27,29 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AddUserActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
+    private FirebaseFirestore mFirestore;
     private TextInputEditText edtIdentity, edtPassword;
     private MaterialButton btnAddAccount, btnGoogleLogin;
     private ImageView btnBack;
     
     private SharedPreferences sharedPreferences;
     private List<UserAccount> accountList;
+    private String originalUserId; // Tài khoản đang dùng để thực hiện thêm liên kết
+    private String originalUserEmail;
 
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN = 9001;
@@ -54,7 +61,13 @@ public class AddUserActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_user);
 
         mAuth = FirebaseAuth.getInstance();
+        mFirestore = FirebaseFirestore.getInstance();
         sharedPreferences = getSharedPreferences("MultiAccountPrefs", MODE_PRIVATE);
+        
+        if (mAuth.getCurrentUser() != null) {
+            originalUserId = mAuth.getCurrentUser().getUid();
+            originalUserEmail = mAuth.getCurrentUser().getEmail();
+        }
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.my_web_client_id))
@@ -65,17 +78,9 @@ public class AddUserActivity extends AppCompatActivity {
         initViews();
         setupInsets();
 
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
-
-        if (btnAddAccount != null) {
-            btnAddAccount.setOnClickListener(v -> performAddAccount());
-        }
-
-        if (btnGoogleLogin != null) {
-            btnGoogleLogin.setOnClickListener(v -> signInWithGoogle());
-        }
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
+        if (btnAddAccount != null) btnAddAccount.setOnClickListener(v -> performAddAccount());
+        if (btnGoogleLogin != null) btnGoogleLogin.setOnClickListener(v -> signInWithGoogle());
         
         loadCurrentAccountList();
 
@@ -127,7 +132,6 @@ public class AddUserActivity extends AppCompatActivity {
                     btnAddAccount.setEnabled(true);
                     btnAddAccount.setText("ĐĂNG NHẬP");
                     if (task.isSuccessful()) {
-                        Toast.makeText(this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                         saveAndGo(mAuth.getCurrentUser(), "password");
                     } else {
                         Toast.makeText(this, "Lỗi: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
@@ -149,9 +153,7 @@ public class AddUserActivity extends AppCompatActivity {
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
-                if (account != null) {
-                    firebaseAuthWithGoogle(account.getIdToken());
-                }
+                if (account != null) firebaseAuthWithGoogle(account.getIdToken());
             } catch (ApiException e) {
                 Toast.makeText(this, "Đăng nhập Google thất bại", Toast.LENGTH_SHORT).show();
             }
@@ -162,7 +164,6 @@ public class AddUserActivity extends AppCompatActivity {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         mAuth.signInWithCredential(credential).addOnCompleteListener(this, task -> {
             if (task.isSuccessful()) {
-                Toast.makeText(this, "Đăng nhập Google thành công!", Toast.LENGTH_SHORT).show();
                 saveAndGo(mAuth.getCurrentUser(), "google.com");
             } else {
                 Toast.makeText(this, "Xác thực Firebase thất bại", Toast.LENGTH_SHORT).show();
@@ -170,25 +171,32 @@ public class AddUserActivity extends AppCompatActivity {
         });
     }
 
-    private void saveAndGo(FirebaseUser user, String provider) {
-        if (user != null) {
+    private void saveAndGo(FirebaseUser newUser, String provider) {
+        if (newUser != null) {
             boolean exists = false;
             for (UserAccount acc : accountList) {
-                if (acc.uid.equals(user.getUid())) {
+                if (acc.uid.equals(newUser.getUid())) {
                     acc.provider = provider; 
                     exists = true;
                     break;
                 }
             }
             if (!exists) {
-                accountList.add(new UserAccount(user.getUid(), user.getEmail(), provider));
-                Toast.makeText(this, "Đã thêm tài khoản mới vào danh sách", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Tài khoản đã có trong danh sách", Toast.LENGTH_SHORT).show();
+                accountList.add(new UserAccount(newUser.getUid(), newUser.getEmail(), provider));
+                
+                // 1. Thông báo cho tài khoản GỐC (Người thực hiện thêm)
+                if (originalUserId != null) {
+                    sendNotification(originalUserId, "Đã thêm tài khoản thành công", 
+                        "Bạn đã thêm tài khoản " + newUser.getEmail() + " thành công.", "Hệ thống");
+                }
+                
+                // 2. Thông báo cho tài khoản ĐƯỢC THÊM (Người vừa đăng nhập)
+                sendNotification(newUser.getUid(), "Liên kết tài khoản thành công", 
+                    "Tài khoản của bạn đã được liên kết với " + (originalUserEmail != null ? originalUserEmail : "một tài khoản khác"), "Hệ thống");
+
+                Toast.makeText(this, "Đã thêm tài khoản mới", Toast.LENGTH_SHORT).show();
             }
             saveAccounts();
-            
-            Toast.makeText(this, "Đang chuyển đến trang chủ...", Toast.LENGTH_SHORT).show();
             
             Intent intent = new Intent(this, HomeActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -197,17 +205,24 @@ public class AddUserActivity extends AppCompatActivity {
         }
     }
 
+    private void sendNotification(String targetUserId, String title, String content, String type) {
+        Map<String, Object> notice = new HashMap<>();
+        notice.put("userId", targetUserId);
+        notice.put("title", title);
+        notice.put("content", content);
+        notice.put("type", type);
+        notice.put("timestamp", FieldValue.serverTimestamp());
+        mFirestore.collection("notifications").add(notice);
+    }
+
     private void setupInsets() {
         View mainView = findViewById(R.id.main);
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                 Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
-                
-                // Đẩy giao diện khi bàn phím hiện (Dùng giá trị lớn nhất giữa systemBar bottom và bàn phím)
                 int bottomPadding = Math.max(systemBars.bottom, imeInsets.bottom);
                 v.setPadding(systemBars.left, systemBars.top, systemBars.right, bottomPadding);
-                
                 return insets;
             });
         }
@@ -218,9 +233,7 @@ public class AddUserActivity extends AppCompatActivity {
         public String email;
         public String provider;
         public UserAccount(String uid, String email, String provider) {
-            this.uid = uid;
-            this.email = email;
-            this.provider = provider;
+            this.uid = uid; this.email = email; this.provider = provider;
         }
     }
 }

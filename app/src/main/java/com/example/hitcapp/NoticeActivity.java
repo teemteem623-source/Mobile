@@ -23,14 +23,19 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class NoticeActivity extends AppCompatActivity {
 
@@ -42,6 +47,8 @@ public class NoticeActivity extends AppCompatActivity {
     
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private ListenerRegistration noticeListener;
+    private String currentCategory = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,25 +65,100 @@ public class NoticeActivity extends AppCompatActivity {
         setupRecyclerView();
         setupChips();
         
-        loadNoticesFromFirestore();
-        swipeRefresh.setOnRefreshListener(this::loadNoticesFromFirestore);
+        syncOrderNotifications();
+        startListeningNotices();
+        
+        swipeRefresh.setOnRefreshListener(() -> {
+            syncOrderNotifications();
+            startListeningNotices();
+            swipeRefresh.setRefreshing(false);
+        });
+    }
+
+    private void syncOrderNotifications() {
+        String currentUserId = auth.getUid();
+        if (currentUserId == null) return;
+
+        db.collection("orders")
+                .whereEqualTo("userId", currentUserId)
+                .get()
+                .addOnSuccessListener(orderSnapshots -> {
+                    for (QueryDocumentSnapshot orderDoc : orderSnapshots) {
+                        String firestoreId = orderDoc.getId();
+                        String rawStatus = orderDoc.getString("status");
+                        String orderCode = orderDoc.getString("orderId");
+
+                        String status = (rawStatus != null) ? rawStatus.trim() : "";
+                        if (status.isEmpty() || status.equalsIgnoreCase("Chờ xác nhận")) continue;
+
+                        String title = "Cập nhật đơn hàng";
+                        String content = "";
+
+                        String s = status.toLowerCase();
+                        if (s.contains("xác nhận")) {
+                            content = "Đơn hàng #" + orderCode + " đã được shop xác nhận và đang chuẩn bị.";
+                        } else if (s.contains("vận chuyển")) {
+                            content = "Đơn hàng #" + orderCode + " đã được bàn giao cho đơn vị vận chuyển.";
+                        } else if (s.contains("đang giao")) {
+                            content = "Đơn hàng #" + orderCode + " đang được shipper giao đến bạn.";
+                        } else if (s.contains("thành công") || s.contains("hoàn tất") || s.contains("hoàn thành")) {
+                            title = "Giao hàng thành công";
+                            content = "Đơn hàng #" + orderCode + " đã được giao thành công. Cảm ơn bạn đã ủng hộ!";
+                        } else if (s.contains("hủy")) {
+                            title = "Hủy đơn hàng thành công";
+                            content = "Đơn hàng #" + orderCode + " của bạn đã được cập nhật trạng thái: Đã hủy.";
+                        }
+
+                        if (content.isEmpty()) continue;
+
+                        final String fTitle = title;
+                        final String fContent = content;
+
+                        // Truy vấn theo oderId (đơn giản, không cần composite index)
+                        db.collection("notifications")
+                                .whereEqualTo("oderId", firestoreId)
+                                .get()
+                                .addOnSuccessListener(noticeSnapshots -> {
+                                    boolean exists = false;
+                                    for (QueryDocumentSnapshot doc : noticeSnapshots) {
+                                        String existingContent = doc.getString("content");
+                                        if (fContent.equals(existingContent)) {
+                                            exists = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!exists) {
+                                        Map<String, Object> n = new HashMap<>();
+                                        n.put("userId", currentUserId);
+                                        n.put("title", fTitle);
+                                        n.put("content", fContent);
+                                        n.put("type", "Đơn hàng");
+                                        n.put("oderId", firestoreId);
+                                        n.put("timestamp", FieldValue.serverTimestamp());
+                                        db.collection("notifications").add(n);
+                                    }
+                                });
+                    }
+                });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (tabNotification != null) selectTab(tabNotification);
-        loadNoticesFromFirestore();
+        syncOrderNotifications();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (noticeListener != null) noticeListener.remove();
     }
 
     private void initViews() {
         rvNotices = findViewById(R.id.rvNotices);
         swipeRefresh = findViewById(R.id.swipeRefresh);
-        
-        View imgCart = findViewById(R.id.imgCart);
-        if (imgCart != null) {
-            imgCart.setOnClickListener(v -> startActivity(new Intent(this, CartActivity.class)));
-        }
     }
 
     private void setupInsets() {
@@ -113,27 +195,21 @@ public class NoticeActivity extends AppCompatActivity {
         tabNotification = findViewById(R.id.tabNotification);
         tabProfile = findViewById(R.id.tabProfile);
 
-        if (tabHome != null) {
-            tabHome.setOnClickListener(v -> {
-                Intent intent = new Intent(this, HomeActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                startActivity(intent);
-            });
-        }
-        if (tabProduct != null) {
-            tabProduct.setOnClickListener(v -> {
-                Intent intent = new Intent(this, ProductActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                startActivity(intent);
-            });
-        }
-        if (tabProfile != null) {
-            tabProfile.setOnClickListener(v -> {
-                Intent intent = new Intent(this, UserActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                startActivity(intent);
-            });
-        }
+        if (tabHome != null) tabHome.setOnClickListener(v -> {
+            Intent intent = new Intent(this, HomeActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+        });
+        if (tabProduct != null) tabProduct.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ProductActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+        });
+        if (tabProfile != null) tabProfile.setOnClickListener(v -> {
+            Intent intent = new Intent(this, UserActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+        });
     }
 
     private void selectTab(LinearLayout selected) {
@@ -144,11 +220,9 @@ public class NoticeActivity extends AppCompatActivity {
         for (int i = 0; i < tabs.length; i++) {
             LinearLayout tab = tabs[i];
             if (tab == null) continue;
-            
             boolean isSelected = (tab == selected);
             ImageView icon = findViewById(iconIds[i]);
             TextView text = findViewById(textIds[i]);
-
             int color = isSelected ? Color.parseColor("#1E3A8A") : Color.parseColor("#94A3B8");
             if (icon != null) icon.setColorFilter(color);
             if (text != null) {
@@ -160,103 +234,143 @@ public class NoticeActivity extends AppCompatActivity {
 
     private void setupRecyclerView() {
         rvNotices.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new NoticeAdapter(new ArrayList<>(fullNoticeList));
+        adapter = new NoticeAdapter(new ArrayList<>(fullNoticeList), this::onNoticeClick);
         rvNotices.setAdapter(adapter);
     }
 
-    private void loadNoticesFromFirestore() {
-        if (auth.getCurrentUser() == null) {
-            if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
-            return;
+    private void onNoticeClick(NoticeItem item) {
+        String type = item.type;
+        String title = (item.title != null) ? item.title.toLowerCase() : "";
+
+        if ("Khuyến mãi".equals(type)) {
+            startActivity(new Intent(this, VoucherActivity.class));
+        } else if ("Đơn hàng".equals(type)) {
+            if (item.oderId != null && !item.oderId.isEmpty()) {
+                Intent intent = new Intent(this, OrderDetailActivity.class);
+                intent.putExtra("ORDER_ID", item.oderId);
+                startActivity(intent);
+            }
+        } else if ("Hệ thống".equals(type)) {
+            if (title.contains("thông tin")) {
+                startActivity(new Intent(this, ProfileActivity.class));
+            } else if (title.contains("tài khoản")) {
+                startActivity(new Intent(this, AccountManagementActivity.class));
+            }
         }
+    }
 
-        db.collection("notifications")
-                .whereEqualTo("userId", auth.getUid())
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    fullNoticeList.clear();
-                    
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        String title = doc.getString("title");
-                        String content = doc.getString("content");
-                        String category = doc.getString("category");
-                        com.google.firebase.Timestamp ts = doc.getTimestamp("timestamp");
-                        
-                        String time = "Vừa xong";
-                        if (ts != null) {
-                            time = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(ts.toDate());
-                        }
+    private void startListeningNotices() {
+        String currentUserId = auth.getUid();
+        if (currentUserId == null) return;
 
-                        int icon = android.R.drawable.ic_popup_reminder;
-                        String color = "#8B5CF6";
-                        if ("Khuyến mãi".equals(category)) {
-                            icon = android.R.drawable.ic_menu_send;
-                            color = "#E11D48";
-                        } else if ("Đơn hàng".equals(category)) {
-                            icon = android.R.drawable.ic_menu_save;
-                            color = "#3B82F6";
-                        } else if ("Hệ thống".equals(category)) {
-                            icon = android.R.drawable.ic_menu_add;
-                            color = "#10B981";
+        if (noticeListener != null) noticeListener.remove();
+
+        noticeListener = db.collection("notifications")
+                .whereEqualTo("userId", currentUserId)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        Log.e("NoticeActivity", "Listen failed.", error);
+                        return;
+                    }
+
+                    if (value != null) {
+                        List<NoticeItem> firestoreItems = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : value) {
+                            String title = doc.getString("title");
+                            String content = doc.getString("content");
+                            String type = doc.getString("type");
+                            String oderId = doc.getString("oderId");
+                            com.google.firebase.Timestamp ts = doc.getTimestamp("timestamp");
+                            
+                            Date date = (ts != null) ? ts.toDate() : new Date();
+                            String time = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(date);
+
+                            int icon = android.R.drawable.ic_popup_reminder;
+                            String color = "#8B5CF6";
+                            if ("Khuyến mãi".equals(type)) {
+                                icon = android.R.drawable.ic_menu_send;
+                                color = "#E11D48";
+                            } else if ("Đơn hàng".equals(type)) {
+                                icon = android.R.drawable.ic_menu_save;
+                                color = "#3B82F6";
+                            } else if ("Hệ thống".equals(type)) {
+                                icon = android.R.drawable.ic_menu_add;
+                                color = "#10B981";
+                            }
+                            
+                            NoticeItem item = new NoticeItem(title, content, icon, color, type, time, oderId);
+                            item.timestampValue = date.getTime();
+                            firestoreItems.add(item);
                         }
                         
-                        fullNoticeList.add(new NoticeItem(title, content, icon, color, category, time));
+                        Collections.sort(firestoreItems, (a, b) -> Long.compare(b.timestampValue, a.timestampValue));
+                        fullNoticeList.clear();
+                        fullNoticeList.addAll(firestoreItems);
+                        addDefaultNotices();
+                        filterAndDisplay();
                     }
-                    
-                    if (fullNoticeList.isEmpty()) {
-                        addPlaceholderNotices();
-                    }
-                    
-                    adapter.updateList(new ArrayList<>(fullNoticeList));
-                    if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("NoticeActivity", "Lỗi tải thông báo: " + e.getMessage());
-                    if (fullNoticeList.isEmpty()) addPlaceholderNotices();
-                    adapter.updateList(new ArrayList<>(fullNoticeList));
-                    if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
                 });
     }
 
-    private void addPlaceholderNotices() {
-        fullNoticeList.add(new NoticeItem("Siêu ưu đãi cuối tuần", "Giảm giá 50% cho tất cả dòng iPhone tại cửa hàng. Duy nhất Chủ nhật này!", android.R.drawable.ic_menu_send, "#E11D48", "Khuyến mãi", "10:30"));
-        fullNoticeList.add(new NoticeItem("Đơn hàng đang đến", "Đơn hàng #TT9988 đang được nhân viên giao hàng vận chuyển đến bạn.", android.R.drawable.ic_menu_save, "#3B82F6", "Đơn hàng", "09:15"));
-        fullNoticeList.add(new NoticeItem("Ví của bạn đã được nạp tiền", "Bạn vừa nạp thành công 500.000đ vào ví TT-Pay.", android.R.drawable.ic_menu_add, "#10B981", "Hệ thống", "Hôm qua"));
+    private void addDefaultNotices() {
+        boolean hasVoucher5tr = false;
+        boolean hasPersonalInfo = false;
+        for (NoticeItem item : fullNoticeList) {
+            if (item.title == null) continue;
+            if (item.title.contains("5 triệu")) hasVoucher5tr = true;
+            if (item.title.toLowerCase().contains("thông tin cá nhân")) hasPersonalInfo = true;
+        }
+        
+        if (!hasVoucher5tr) {
+            fullNoticeList.add(new NoticeItem("Voucher 5 triệu cho bạn", "Bạn vừa nhận được voucher giảm giá 5.000.000đ cho đơn hàng tiếp theo.", android.R.drawable.ic_menu_send, "#E11D48", "Khuyến mãi", "Mới", ""));
+            fullNoticeList.add(new NoticeItem("3 Voucher miễn phí vận chuyển", "Nhận ngay 3 mã freeship cực hời trong ví voucher của bạn.", android.R.drawable.ic_menu_send, "#E11D48", "Khuyến mãi", "Mới", ""));
+        }
+        if (!hasPersonalInfo) {
+            fullNoticeList.add(new NoticeItem("Thêm thông tin cá nhân", "Cập nhật hồ sơ để nhận thêm nhiều ưu đãi và bảo mật tài khoản tốt hơn.", android.R.drawable.ic_menu_add, "#10B981", "Hệ thống", "Mới", ""));
+        }
     }
 
     private void setupChips() {
         ChipGroup chipGroup = findViewById(R.id.chipGroup);
         if (chipGroup == null) return;
         chipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.isEmpty()) { adapter.updateList(new ArrayList<>(fullNoticeList)); return; }
-            int id = checkedIds.get(0);
-            String cat = "";
-            if (id == R.id.chipAll) cat = "";
-            else if (id == R.id.chipUuDai) cat = "Khuyến mãi";
-            else if (id == R.id.chipDonHang) cat = "Đơn hàng";
-            else if (id == R.id.chipHeThong) cat = "Hệ thống";
-            
-            if (cat.isEmpty()) {
-                adapter.updateList(new ArrayList<>(fullNoticeList));
-            } else {
-                List<NoticeItem> filtered = new ArrayList<>();
-                for (NoticeItem item : fullNoticeList) if (item.category.equals(cat)) filtered.add(item);
-                adapter.updateList(filtered);
+            if (checkedIds.isEmpty()) { currentCategory = ""; }
+            else {
+                int id = checkedIds.get(0);
+                if (id == R.id.chipAll) currentCategory = "";
+                else if (id == R.id.chipUuDai) currentCategory = "Khuyến mãi";
+                else if (id == R.id.chipDonHang) currentCategory = "Đơn hàng";
+                else if (id == R.id.chipHeThong) currentCategory = "Hệ thống";
             }
+            filterAndDisplay();
         });
     }
 
-    private static class NoticeItem {
-        String title, content, colorHex, category, time; int iconRes;
-        NoticeItem(String t, String c, int icon, String color, String cat, String time) { 
-            this.title = t; this.content = c; this.iconRes = icon; this.colorHex = color; this.category = cat; this.time = time;
+    private void filterAndDisplay() {
+        if (currentCategory.isEmpty()) {
+            adapter.updateList(new ArrayList<>(fullNoticeList));
+        } else {
+            List<NoticeItem> filtered = new ArrayList<>();
+            for (NoticeItem item : fullNoticeList) {
+                if (currentCategory.equals(item.type)) filtered.add(item);
+            }
+            adapter.updateList(filtered);
         }
     }
 
+    private static class NoticeItem {
+        String title, content, colorHex, type, time, oderId; int iconRes; long timestampValue;
+        NoticeItem(String t, String c, int icon, String color, String type, String time, String oderId) { 
+            this.title = t; this.content = c; this.iconRes = icon; this.colorHex = color; this.type = type; this.time = time; this.oderId = oderId;
+        }
+    }
+
+    private interface OnNoticeClickListener { void onNoticeClick(NoticeItem item); }
+
     private static class NoticeAdapter extends RecyclerView.Adapter<NoticeAdapter.ViewHolder> {
         private List<NoticeItem> list;
-        NoticeAdapter(List<NoticeItem> list) { this.list = list; }
+        private OnNoticeClickListener listener;
+        NoticeAdapter(List<NoticeItem> list, OnNoticeClickListener listener) { this.list = list; this.listener = listener; }
         public void updateList(List<NoticeItem> newList) { this.list = newList; notifyDataSetChanged(); }
         @NonNull @Override public ViewHolder onCreateViewHolder(@NonNull ViewGroup p, int vt) {
             View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_notice, p, false);
@@ -264,22 +378,15 @@ public class NoticeActivity extends AppCompatActivity {
         }
         @Override public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
             NoticeItem item = list.get(pos);
-            h.tvTitle.setText(item.title); 
-            h.tvContent.setText(item.content); 
-            h.tvTime.setText(item.time);
+            h.tvTitle.setText(item.title); h.tvContent.setText(item.content); h.tvTime.setText(item.time);
             h.imgIcon.setImageResource(item.iconRes);
             try { h.imgIcon.setColorFilter(Color.parseColor(item.colorHex)); } catch (Exception e) {}
+            h.itemView.setOnClickListener(v -> { if (listener != null) listener.onNoticeClick(item); });
         }
         @Override public int getItemCount() { return list.size(); }
         static class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvTitle, tvContent, tvTime; ImageView imgIcon;
-            ViewHolder(View v) { 
-                super(v); 
-                tvTitle = v.findViewById(R.id.tvTitle); 
-                tvContent = v.findViewById(R.id.tvContent); 
-                tvTime = v.findViewById(R.id.tvTime);
-                imgIcon = v.findViewById(R.id.imgNoticeIcon); 
-            }
+            ViewHolder(View v) { super(v); tvTitle = v.findViewById(R.id.tvTitle); tvContent = v.findViewById(R.id.tvContent); tvTime = v.findViewById(R.id.tvTime); imgIcon = v.findViewById(R.id.imgNoticeIcon); }
         }
     }
 }

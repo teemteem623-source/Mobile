@@ -201,6 +201,18 @@
                 app:checkedIconVisible="false" />
 
             <com.google.android.material.chip.Chip
+                android:id="@+id/chipDelivered"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Giao thành công"
+                app:chipBackgroundColor="@color/chip_bg_state_list"
+                app:chipStrokeColor="@color/chip_stroke_color"
+                app:chipStrokeWidth="1dp"
+                android:textColor="@color/chip_text_state_list"
+                app:checkedIconVisible="false" />
+
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chipCancelled"
                 style="@style/Widget.MaterialComponents.Chip.Choice"
                 android:layout_width="wrap_content"

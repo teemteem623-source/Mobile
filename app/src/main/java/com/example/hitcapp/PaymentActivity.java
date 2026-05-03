@@ -80,6 +80,7 @@ public class PaymentActivity extends AppCompatActivity {
             return;
         }
 
+        // Nhận dữ liệu sản phẩm từ Intent
         if (getIntent().hasExtra("SELECTED_ITEMS_DATA")) {
             selectedItems = (ArrayList<CartItem>) getIntent().getSerializableExtra("SELECTED_ITEMS_DATA");
         } else if (getIntent().hasExtra("SELECTED_ITEMS")) {
@@ -88,7 +89,17 @@ public class PaymentActivity extends AppCompatActivity {
 
         initViews();
         setupInsets();
-        renderProducts();
+
+        // Kiểm tra và hiển thị dữ liệu ngay lập tức
+        if (selectedItems != null && !selectedItems.isEmpty()) {
+            renderProducts();
+            updateUI();
+        } else {
+            Toast.makeText(this, "Không có thông tin sản phẩm để thanh toán", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
         loadDefaultAddress();
         autoApplyVouchers();
     }
@@ -143,18 +154,21 @@ public class PaymentActivity extends AppCompatActivity {
                 .whereEqualTo("used", false)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
+                    boolean changed = false;
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         Voucher v = doc.toObject(Voucher.class);
                         v.setId(doc.getId());
                         if (v.isAutoApply()) {
                             if (v.getType().equals(Voucher.TYPE_SHIPPING) && selectedShippingVoucher == null) {
                                 selectedShippingVoucher = v;
+                                changed = true;
                             } else if (v.getType().equals(Voucher.TYPE_DISCOUNT) && selectedProductVoucher == null) {
                                 selectedProductVoucher = v;
+                                changed = true;
                             }
                         }
                     }
-                    updateUI();
+                    if (changed) updateUI();
                 });
     }
 
@@ -181,19 +195,15 @@ public class PaymentActivity extends AppCompatActivity {
             totalQty += item.getQuantity();
         }
 
-        // Phí vận chuyển 1% (tối thiểu 30.000đ)
+        // Tính phí ship giả định: 1% giá trị đơn hàng, tối thiểu 30k
         shippingFee = (long) (subTotal * 0.01);
         if (shippingFee < 30000) shippingFee = 30000;
         
         shippingDiscount = 0;
-        if (selectedShippingVoucher != null) {
-            shippingDiscount = shippingFee; // Miễn phí hoàn toàn
-        }
+        if (selectedShippingVoucher != null) shippingDiscount = shippingFee;
 
         productDiscount = 0;
-        if (selectedProductVoucher != null) {
-            productDiscount = selectedProductVoucher.getValue();
-        }
+        if (selectedProductVoucher != null) productDiscount = selectedProductVoucher.getValue();
 
         long finalTotal = subTotal + shippingFee - shippingDiscount - productDiscount;
         if (finalTotal < 0) finalTotal = 0;
@@ -213,16 +223,8 @@ public class PaymentActivity extends AppCompatActivity {
         containerSelectedVouchers.removeAllViews();
         int count = 0;
         LayoutInflater inflater = LayoutInflater.from(this);
-
-        if (selectedShippingVoucher != null) {
-            addVoucherView(inflater, selectedShippingVoucher);
-            count++;
-        }
-        if (selectedProductVoucher != null) {
-            addVoucherView(inflater, selectedProductVoucher);
-            count++;
-        }
-
+        if (selectedShippingVoucher != null) { addVoucherView(inflater, selectedShippingVoucher); count++; }
+        if (selectedProductVoucher != null) { addVoucherView(inflater, selectedProductVoucher); count++; }
         if (count > 0) {
             tvVoucherCount.setText("Đã chọn " + count + " voucher");
             tvVoucherCount.setTextColor(Color.parseColor("#00B5AD"));
@@ -240,12 +242,9 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     private void placeOrder() {
-        if (!hasAddress) {
-            Toast.makeText(this, "Vui lòng chọn địa chỉ!", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (!hasAddress) { Toast.makeText(this, "Vui lòng chọn địa chỉ!", Toast.LENGTH_SHORT).show(); return; }
 
-        String orderGroupId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String orderIdText = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         long totalOriginalPrice = 0;
         List<Map<String, Object>> itemsList = new ArrayList<>();
         
@@ -261,7 +260,7 @@ public class PaymentActivity extends AppCompatActivity {
         }
 
         Map<String, Object> order = new HashMap<>();
-        order.put("orderId", orderGroupId);
+        order.put("orderId", orderIdText);
         order.put("userId", auth.getUid());
         order.put("buyerName", buyerName);
         order.put("buyerPhone", buyerPhone);
@@ -274,44 +273,50 @@ public class PaymentActivity extends AppCompatActivity {
         order.put("createAt", FieldValue.serverTimestamp());
         order.put("items", itemsList);
 
-        // Trường để hiển thị ảnh ở danh sách (lấy ảnh đầu tiên)
         if (!selectedItems.isEmpty()) {
-            order.put("imageUrl", selectedItems.get(0).getImageUrl());
-            order.put("productName", selectedItems.get(0).getName());
-            order.put("quantity", selectedItems.get(0).getQuantity());
-            order.put("productId", selectedItems.get(0).getProductId());
+            CartItem firstItem = selectedItems.get(0);
+            order.put("imageUrl", firstItem.getImageUrl());
+            order.put("productName", firstItem.getName());
+            order.put("quantity", firstItem.getQuantity());
+            order.put("productId", firstItem.getProductId());
         }
 
         db.collection("orders").add(order).addOnSuccessListener(documentReference -> {
-            // Xóa sản phẩm khỏi giỏ hàng
+            String firestoreId = documentReference.getId();
+            sendNotification("Mua hàng thành công", "Đơn hàng #" + orderIdText + " đã được đặt thành công.", "Đơn hàng", firestoreId);
             clearPurchasedItemsFromCart();
-
-            // Đánh dấu voucher đã dùng
             if (selectedShippingVoucher != null) markVoucherUsed(selectedShippingVoucher.getId());
             if (selectedProductVoucher != null) markVoucherUsed(selectedProductVoucher.getId());
-
-            // Tặng voucher mới sau mua hàng
             voucherService.checkAndRewardAfterOrder(auth.getUid());
-            
             Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(this, OderActivity.class));
+            
+            Intent intent = new Intent(this, OderActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
             finish();
         });
+    }
+
+    private void sendNotification(String title, String content, String type, String oderId) {
+        Map<String, Object> notice = new HashMap<>();
+        notice.put("userId", auth.getUid());
+        notice.put("title", title);
+        notice.put("content", content);
+        notice.put("type", type);
+        notice.put("oderId", oderId);
+        notice.put("timestamp", FieldValue.serverTimestamp());
+        db.collection("notifications").add(notice);
     }
 
     private void clearPurchasedItemsFromCart() {
         WriteBatch batch = db.batch();
         for (CartItem item : selectedItems) {
-            if (item.getCartItemId() != null) {
-                batch.delete(db.collection("carts").document(item.getCartItemId()));
-            }
+            if (item.getCartItemId() != null) batch.delete(db.collection("carts").document(item.getCartItemId()));
         }
         batch.commit();
     }
 
-    private void markVoucherUsed(String id) {
-        db.collection("vouchers").document(id).update("used", true);
-    }
+    private void markVoucherUsed(String id) { db.collection("vouchers").document(id).update("used", true); }
 
     private void loadDefaultAddress() {
         db.collection("address").whereEqualTo("userId", auth.getUid()).limit(1).get()
@@ -323,16 +328,12 @@ public class PaymentActivity extends AppCompatActivity {
                         item.phone = doc.getString("phone");
                         item.address = doc.getString("address");
                         setAddress(item);
-                    } else {
-                        tvAddressWarning.setVisibility(View.VISIBLE);
-                    }
+                    } else tvAddressWarning.setVisibility(View.VISIBLE);
                 });
     }
 
     private void setAddress(AddressActivity.AddressItem item) {
-        buyerName = item.name;
-        buyerPhone = item.phone;
-        buyerAddress = item.address;
+        buyerName = item.name; buyerPhone = item.phone; buyerAddress = item.address;
         hasAddress = true;
         tvDisplayName.setText(buyerName + " (" + buyerPhone + ")");
         tvDisplayAddress.setText(buyerAddress);
@@ -352,7 +353,5 @@ public class PaymentActivity extends AppCompatActivity {
         }
     }
 
-    private String formatMoney(long amount) {
-        return String.format(Locale.getDefault(), "%,dđ", amount);
-    }
+    private String formatMoney(long amount) { return String.format(Locale.getDefault(), "%,dđ", amount); }
 }

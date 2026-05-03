@@ -23,11 +23,14 @@ import com.example.hitcapp.models.Order;
 import com.example.hitcapp.models.OrderItem;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class OrderDetailActivity extends AppCompatActivity {
 
@@ -106,9 +109,28 @@ public class OrderDetailActivity extends AppCompatActivity {
                 .update("status", "Đã hủy")
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(OrderDetailActivity.this, "Đã hủy đơn hàng thành công", Toast.LENGTH_SHORT).show();
-                    fetchOrderDetails(); // Tải lại dữ liệu để cập nhật UI
+                    
+                    // Gửi thông báo khi người dùng hủy đơn
+                    if (currentOrder != null) {
+                        sendNotification("Hủy đơn hàng thành công", 
+                            "Bạn đã hủy đơn hàng #" + currentOrder.getOrderId() + " thành công.", 
+                            "Đơn hàng", orderId);
+                    }
+                    
+                    fetchOrderDetails(); 
                 })
                 .addOnFailureListener(e -> Toast.makeText(OrderDetailActivity.this, "Lỗi khi hủy đơn hàng", Toast.LENGTH_SHORT).show());
+    }
+
+    private void sendNotification(String title, String content, String type, String oderId) {
+        Map<String, Object> notice = new HashMap<>();
+        notice.put("userId", auth.getUid());
+        notice.put("title", title);
+        notice.put("content", content);
+        notice.put("type", type);
+        notice.put("oderId", oderId);
+        notice.put("timestamp", FieldValue.serverTimestamp());
+        db.collection("notifications").add(notice);
     }
 
     private void addAllToCart() {
@@ -148,7 +170,6 @@ public class OrderDetailActivity extends AppCompatActivity {
                 
                 topBar.setPadding(topBar.getPaddingLeft(), systemBars.top, topBar.getPaddingRight(), topBar.getPaddingBottom());
                 
-                // Đảm bảo Bottom Bar dính sát cạnh và không bị che bởi thanh điều hướng hệ thống
                 layoutBottomAction.setPadding(layoutBottomAction.getPaddingLeft(), layoutBottomAction.getPaddingTop(), 
                                            layoutBottomAction.getPaddingRight(), navBars.bottom);
                 
@@ -174,12 +195,11 @@ public class OrderDetailActivity extends AppCompatActivity {
     }
 
     private void displayData(Order order) {
-        String status = order.getStatus() != null ? order.getStatus() : "Chờ xác nhận";
+        String status = order.getStatus() != null ? order.getStatus().trim() : "Chờ xác nhận";
         tvHeaderStatus.setText("Chi tiết đơn hàng");
         tvDetailStatusTitle.setText(status);
 
-        // Hiển thị nút Hủy đơn nếu trạng thái là Chờ xác nhận
-        if ("Chờ xác nhận".equals(status)) {
+        if ("Chờ xác nhận".equalsIgnoreCase(status)) {
             btnCancelOrder.setVisibility(View.VISIBLE);
         } else {
             btnCancelOrder.setVisibility(View.GONE);
@@ -211,14 +231,19 @@ public class OrderDetailActivity extends AppCompatActivity {
                 tvDetailStatusDesc.setText("Rất tiếc! Hy vọng TT shop sẽ được phục vụ bạn ở lần tới.");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#F1F5F9"));
                 break;
+            case "Đã hoàn tất":
             case "Đã hoàn thành":
                 tvDeliveryNote.setText("Giao hàng thành công. Cảm ơn bạn đã ủng hộ TT shop!");
                 tvDetailStatusDesc.setText("Chúc bạn có những trải nghiệm tuyệt vời với sản phẩm.");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#DCFCE7"));
                 break;
+            default:
+                tvDeliveryNote.setText("Kiện hàng đang được xử lý");
+                tvDetailStatusDesc.setText("Cảm ơn bạn đã mua sắm tại TT Shop");
+                layoutStatusBanner.setBackgroundColor(Color.parseColor("#F8FAFC"));
+                break;
         }
 
-        // FIX CRASH: Chuyển Timestamp sang Date trước khi format
         if (order.getTimestamp() != null) {
             String timeStr = sdfTime.format(order.getTimestamp().toDate());
             String dateStr = sdfDate.format(order.getTimestamp().toDate());
@@ -226,8 +251,8 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
 
         tvDetailBuyerName.setText(order.getBuyerName() + " (" + order.getBuyerPhone() + ")");
-        tvDetailAddress.setText(order.getAddress());
-        tvDetailOrderId.setText(order.getId());
+        tvDetailAddress.setText(order.getShippingAddress());
+        tvDetailOrderId.setText(order.getOrderId());
         tvDetailPaymentMethod.setText(order.getPaymentMethod());
         
         long subtotal = 0;
@@ -251,6 +276,6 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
         tvDetailSubtotal.setText(String.format(Locale.getDefault(), "%,dđ", subtotal));
         tvDetailShipping.setText(String.format(Locale.getDefault(), "%,dđ", order.getShippingFee()));
-        tvDetailTotal.setText(String.format(Locale.getDefault(), "%,dđ", order.getTotalAmount()));
+        tvDetailTotal.setText(String.format(Locale.getDefault(), "%,dđ", order.getFinalPrice()));
     }
 }
