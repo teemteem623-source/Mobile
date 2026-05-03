@@ -76,9 +76,6 @@ public class UserActivity extends AppCompatActivity {
         tvUserName = findViewById(R.id.tvUserName);
         tvMembership = findViewById(R.id.tvMembership);
         imgUserAvatar = findViewById(R.id.imgUserAvatar);
-
-        findViewById(R.id.imgWallet).setOnClickListener(v -> startActivity(new Intent(this, WalletActivity.class)));
-        findViewById(R.id.imgSettings).setOnClickListener(v -> Toast.makeText(this, "Cài đặt", Toast.LENGTH_SHORT).show());
     }
 
     private void loadUserData() {

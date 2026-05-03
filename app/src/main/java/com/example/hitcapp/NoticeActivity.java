@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 
 public class NoticeActivity extends AppCompatActivity {
 
@@ -65,7 +66,7 @@ public class NoticeActivity extends AppCompatActivity {
         setupRecyclerView();
         setupChips();
         
-        syncOrderNotifications();
+        // syncOrderNotifications() removed to prevent double call (it is called in onResume)
         startListeningNotices();
         
         swipeRefresh.setOnRefreshListener(() -> {
@@ -89,21 +90,25 @@ public class NoticeActivity extends AppCompatActivity {
                         String orderCode = orderDoc.getString("orderId");
 
                         String status = (rawStatus != null) ? rawStatus.trim() : "";
-                        if (status.isEmpty() || status.equalsIgnoreCase("Chờ xác nhận")) continue;
+                        if (status.isEmpty()) continue;
 
                         String title = "Cập nhật đơn hàng";
                         String content = "";
+                        boolean isCompleted = false;
 
                         String s = status.toLowerCase();
-                        if (s.contains("xác nhận")) {
+                        // Removed "chờ xác nhận" notification because it's already handled in PaymentActivity
+                        if (s.contains("đã xác nhận")) {
                             content = "Đơn hàng #" + orderCode + " đã được shop xác nhận và đang chuẩn bị.";
                         } else if (s.contains("vận chuyển")) {
                             content = "Đơn hàng #" + orderCode + " đã được bàn giao cho đơn vị vận chuyển.";
                         } else if (s.contains("đang giao")) {
-                            content = "Đơn hàng #" + orderCode + " đang được shipper giao đến bạn.";
+                            title = "Đơn hàng đang giao";
+                            content = "Đơn hàng #" + orderCode + " đang được giao đến bạn. Hãy để ý điện thoại nhé!";
                         } else if (s.contains("thành công") || s.contains("hoàn tất") || s.contains("hoàn thành")) {
                             title = "Giao hàng thành công";
                             content = "Đơn hàng #" + orderCode + " đã được giao thành công. Cảm ơn bạn đã ủng hộ!";
+                            isCompleted = true;
                         } else if (s.contains("hủy")) {
                             title = "Hủy đơn hàng thành công";
                             content = "Đơn hàng #" + orderCode + " của bạn đã được cập nhật trạng thái: Đã hủy.";
@@ -113,22 +118,22 @@ public class NoticeActivity extends AppCompatActivity {
 
                         final String fTitle = title;
                         final String fContent = content;
+                        final boolean fIsCompleted = isCompleted;
 
-                        // Truy vấn theo oderId (đơn giản, không cần composite index)
                         db.collection("notifications")
                                 .whereEqualTo("oderId", firestoreId)
                                 .get()
                                 .addOnSuccessListener(noticeSnapshots -> {
-                                    boolean exists = false;
+                                    boolean statusNoticeExists = false;
+                                    boolean loyaltyNoticeExists = false;
                                     for (QueryDocumentSnapshot doc : noticeSnapshots) {
                                         String existingContent = doc.getString("content");
-                                        if (fContent.equals(existingContent)) {
-                                            exists = true;
-                                            break;
-                                        }
+                                        String type = doc.getString("type");
+                                        if (fContent.equals(existingContent)) statusNoticeExists = true;
+                                        if ("Khuyến mãi".equals(type) && doc.contains("voucherCode")) loyaltyNoticeExists = true;
                                     }
 
-                                    if (!exists) {
+                                    if (!statusNoticeExists) {
                                         Map<String, Object> n = new HashMap<>();
                                         n.put("userId", currentUserId);
                                         n.put("title", fTitle);
@@ -137,6 +142,21 @@ public class NoticeActivity extends AppCompatActivity {
                                         n.put("oderId", firestoreId);
                                         n.put("timestamp", FieldValue.serverTimestamp());
                                         db.collection("notifications").add(n);
+                                    }
+
+                                    if (fIsCompleted && !loyaltyNoticeExists) {
+                                        String[] codes = {"VANNANG", "TRIAN", "FREE", "HITCAPP"};
+                                        String selectedCode = codes[new Random().nextInt(codes.length)];
+                                        
+                                        Map<String, Object> l = new HashMap<>();
+                                        l.put("userId", currentUserId);
+                                        l.put("title", "Quà tri ân mua hàng 🎁");
+                                        l.put("content", "Cảm ơn bạn đã mua sắm! Nhấn vào đây và nhập mã " + selectedCode + " để nhận voucher may mắn lên đến 2 triệu đồng.");
+                                        l.put("type", "Khuyến mãi");
+                                        l.put("voucherCode", selectedCode);
+                                        l.put("oderId", firestoreId);
+                                        l.put("timestamp", FieldValue.serverTimestamp());
+                                        db.collection("notifications").add(l);
                                     }
                                 });
                     }
@@ -243,7 +263,11 @@ public class NoticeActivity extends AppCompatActivity {
         String title = (item.title != null) ? item.title.toLowerCase() : "";
 
         if ("Khuyến mãi".equals(type)) {
-            startActivity(new Intent(this, VoucherActivity.class));
+            Intent intent = new Intent(this, VoucherActivity.class);
+            if (item.voucherCode != null && !item.voucherCode.isEmpty()) {
+                intent.putExtra("AUTO_FILL_CODE", item.voucherCode);
+            }
+            startActivity(intent);
         } else if ("Đơn hàng".equals(type)) {
             if (item.oderId != null && !item.oderId.isEmpty()) {
                 Intent intent = new Intent(this, OrderDetailActivity.class);
@@ -277,28 +301,78 @@ public class NoticeActivity extends AppCompatActivity {
                         List<NoticeItem> firestoreItems = new ArrayList<>();
                         for (QueryDocumentSnapshot doc : value) {
                             String title = doc.getString("title");
-                            String content = doc.getString("content");
+                            String content = (doc.getString("content") != null) ? doc.getString("content") : "";
                             String type = doc.getString("type");
                             String oderId = doc.getString("oderId");
+                            String vCode = doc.getString("voucherCode");
+                            String vType = doc.getString("voucherType");
                             com.google.firebase.Timestamp ts = doc.getTimestamp("timestamp");
                             
                             Date date = (ts != null) ? ts.toDate() : new Date();
                             String time = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(date);
 
-                            int icon = android.R.drawable.ic_popup_reminder;
-                            String color = "#8B5CF6";
+                            // LOGIC PHÂN LOẠI ICON VÀ MÀU SẮC CHI TIẾT
+                            int icon = R.drawable.update; 
+                            String colorHex = "#10B981"; // Mặc định hệ thống màu xanh lá
+
                             if ("Khuyến mãi".equals(type)) {
-                                icon = android.R.drawable.ic_menu_send;
-                                color = "#E11D48";
+                                colorHex = "#EF4444"; 
+                                String t = (title != null) ? title.toLowerCase() : "";
+                                String c = content.toLowerCase();
+
+                                if (c.contains("5 triệu") || c.contains("gói quà tặng")) {
+                                    icon = R.drawable.giftbox; // Chỉ cho gói 5M + 3 Freeship
+                                } else if (t.contains("mã") || c.contains("nhập mã") || vCode != null) {
+                                    icon = R.drawable.voucher1; // Dành cho thông báo Mã
+                                } else if ("SHIPPING".equals(vType) || c.contains("freeship") || c.contains("vận chuyển")) {
+                                    icon = R.drawable.logistic; // Voucher vận chuyển
+                                } else {
+                                    icon = R.drawable.voucher; // Voucher sản phẩm
+                                }
                             } else if ("Đơn hàng".equals(type)) {
-                                icon = android.R.drawable.ic_menu_save;
-                                color = "#3B82F6";
+                                colorHex = "#3B82F6"; 
+                                String c = content.toLowerCase();
+                                String t = (title != null) ? title.toLowerCase() : "";
+                                
+                                // Ưu tiên kiểm tra "đang giao" trước để tránh nhầm lẫn với các keyword khác
+                                if (c.contains("đang giao") || t.contains("đang giao") || c.contains("shipper") || c.contains("giao đến")) {
+                                    icon = R.drawable.shop;
+                                } else if (c.contains("thành công") || c.contains("hoàn tất") || c.contains("hoàn thành")) {
+                                    if (c.contains("đặt")) {
+                                        icon = R.drawable.booking;
+                                    } else {
+                                        icon = R.drawable.product;
+                                    }
+                                } else if (c.contains("vận chuyển")) {
+                                    icon = R.drawable.tracking;
+                                } else if (c.contains("xác nhận")) {
+                                    icon = R.drawable.checklist;
+                                } else if (c.contains("hủy")) {
+                                    icon = R.drawable.reject;
+                                    colorHex = "#EF4444"; 
+                                } else {
+                                    icon = R.drawable.booking;
+                                }
                             } else if ("Hệ thống".equals(type)) {
-                                icon = android.R.drawable.ic_menu_add;
-                                color = "#10B981";
+                                colorHex = "#10B981"; 
+                                String t = (title != null) ? title.toLowerCase() : "";
+                                String c = content.toLowerCase();
+
+                                if (t.contains("xóa") || c.contains("xóa") || t.contains("hủy")) {
+                                    // Ưu tiên hiện icon reject màu đỏ khi có chữ "xóa" hoặc "hủy"
+                                    icon = R.drawable.user;
+                                    colorHex = "#EF4444";
+                                } else if (t.contains("thêm") || c.contains("thêm")) {
+                                    icon = R.drawable.adduser;
+                                } else if (t.contains("cập nhật") || c.contains("thành công")) {
+                                    icon = R.drawable.update;
+                                } else {
+                                    icon = R.drawable.user;
+                                }
                             }
                             
-                            NoticeItem item = new NoticeItem(title, content, icon, color, type, time, oderId);
+                            NoticeItem item = new NoticeItem(title, content, icon, colorHex, type, time, oderId);
+                            item.voucherCode = vCode;
                             item.timestampValue = date.getTime();
                             firestoreItems.add(item);
                         }
@@ -313,20 +387,14 @@ public class NoticeActivity extends AppCompatActivity {
     }
 
     private void addDefaultNotices() {
-        boolean hasVoucher5tr = false;
         boolean hasPersonalInfo = false;
         for (NoticeItem item : fullNoticeList) {
             if (item.title == null) continue;
-            if (item.title.contains("5 triệu")) hasVoucher5tr = true;
             if (item.title.toLowerCase().contains("thông tin cá nhân")) hasPersonalInfo = true;
         }
         
-        if (!hasVoucher5tr) {
-            fullNoticeList.add(new NoticeItem("Voucher 5 triệu cho bạn", "Bạn vừa nhận được voucher giảm giá 5.000.000đ cho đơn hàng tiếp theo.", android.R.drawable.ic_menu_send, "#E11D48", "Khuyến mãi", "Mới", ""));
-            fullNoticeList.add(new NoticeItem("3 Voucher miễn phí vận chuyển", "Nhận ngay 3 mã freeship cực hời trong ví voucher của bạn.", android.R.drawable.ic_menu_send, "#E11D48", "Khuyến mãi", "Mới", ""));
-        }
         if (!hasPersonalInfo) {
-            fullNoticeList.add(new NoticeItem("Thêm thông tin cá nhân", "Cập nhật hồ sơ để nhận thêm nhiều ưu đãi và bảo mật tài khoản tốt hơn.", android.R.drawable.ic_menu_add, "#10B981", "Hệ thống", "Mới", ""));
+            fullNoticeList.add(new NoticeItem("Thêm thông tin cá nhân", "Cập nhật hồ sơ để nhận thêm nhiều ưu đãi và bảo mật tài khoản tốt hơn.", R.drawable.adduser, "#10B981", "Hệ thống", "Mới", ""));
         }
     }
 
@@ -359,7 +427,7 @@ public class NoticeActivity extends AppCompatActivity {
     }
 
     private static class NoticeItem {
-        String title, content, colorHex, type, time, oderId; int iconRes; long timestampValue;
+        String title, content, colorHex, type, time, oderId, voucherCode; int iconRes; long timestampValue;
         NoticeItem(String t, String c, int icon, String color, String type, String time, String oderId) { 
             this.title = t; this.content = c; this.iconRes = icon; this.colorHex = color; this.type = type; this.time = time; this.oderId = oderId;
         }
@@ -380,7 +448,15 @@ public class NoticeActivity extends AppCompatActivity {
             NoticeItem item = list.get(pos);
             h.tvTitle.setText(item.title); h.tvContent.setText(item.content); h.tvTime.setText(item.time);
             h.imgIcon.setImageResource(item.iconRes);
-            try { h.imgIcon.setColorFilter(Color.parseColor(item.colorHex)); } catch (Exception e) {}
+            
+            if (item.colorHex != null && !item.colorHex.isEmpty()) {
+                try { h.imgIcon.setColorFilter(Color.parseColor(item.colorHex)); } catch (Exception e) {
+                    h.imgIcon.clearColorFilter();
+                }
+            } else {
+                h.imgIcon.clearColorFilter();
+            }
+
             h.itemView.setOnClickListener(v -> { if (listener != null) listener.onNoticeClick(item); });
         }
         @Override public int getItemCount() { return list.size(); }

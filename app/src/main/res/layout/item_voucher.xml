@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <!-- Icon Section - Now White Background as requested -->
+        <!-- Icon Section -->
         <LinearLayout
             android:id="@+id/layoutIcon"
             android:layout_width="0dp"
@@ -29,8 +29,7 @@
                 android:id="@+id/imgVoucherIcon"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:src="@android:drawable/ic_menu_send"
-                app:tint="#3B82F6" />
+                android:src="@drawable/voucher" />
         </LinearLayout>
 
         <!-- Divider line -->

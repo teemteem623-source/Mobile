@@ -19,9 +19,7 @@
         <activity android:name=".VerifyAccountActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".AccountManagementActivity" android:exported="false" />
         <activity android:name=".OrderDetailActivity" android:exported="false" />
-        <activity android:name=".WalletActivity" android:exported="false" />
         <activity android:name=".AddUserActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ProcessActivity" android:exported="false" />
         <activity android:name=".OderActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ChangePasswordActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ProfileActivity" android:exported="false" android:windowSoftInputMode="adjustPan" />

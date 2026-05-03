@@ -64,25 +64,40 @@
                 android:layout_height="wrap_content"
                 android:background="#E0F2FE"
                 android:padding="24dp"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tvDetailStatusTitle"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Trạng thái"
-                    android:textColor="#1E40AF"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvDeliveryNote"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Thông báo chi tiết"
-                    android:textColor="#3B82F6"
-                    android:textSize="14sp" />
+                    <TextView
+                        android:id="@+id/tvDetailStatusTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Trạng thái"
+                        android:textColor="#1E40AF"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvDeliveryNote"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Thông báo chi tiết"
+                        android:textColor="#3B82F6"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/imgDetailStatusIcon"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:src="@drawable/booking"
+                    app:tint="#1E3A8A" />
             </LinearLayout>
 
             <!-- Khung Thời gian -->

@@ -44,6 +44,7 @@ public class OrderDetailActivity extends AppCompatActivity {
     private TextView tvHeaderStatus, tvDetailStatusTitle, tvDeliveryNote, tvDetailTime, tvDetailStatusDesc;
     private TextView tvDetailBuyerName, tvDetailAddress, tvDetailOrderId, tvDetailPaymentMethod;
     private TextView tvDetailSubtotal, tvDetailShipping, tvDetailTotal;
+    private ImageView imgDetailStatusIcon;
     private LinearLayout containerOrderItems, layoutStatusBanner, layoutBottomAction;
     private MaterialButton btnCancelOrder;
 
@@ -76,6 +77,7 @@ public class OrderDetailActivity extends AppCompatActivity {
         tvDeliveryNote = findViewById(R.id.tvDeliveryNote);
         tvDetailTime = findViewById(R.id.tvDetailTime);
         tvDetailStatusDesc = findViewById(R.id.tvDetailStatusDesc);
+        imgDetailStatusIcon = findViewById(R.id.imgDetailStatusIcon);
         layoutStatusBanner = findViewById(R.id.layoutStatusBanner);
         layoutBottomAction = findViewById(R.id.layoutBottomAction);
         btnCancelOrder = findViewById(R.id.btnCancelOrder);
@@ -205,43 +207,55 @@ public class OrderDetailActivity extends AppCompatActivity {
             btnCancelOrder.setVisibility(View.GONE);
         }
 
+        int statusIcon = R.drawable.booking;
         switch (status) {
             case "Chờ xác nhận":
                 tvDeliveryNote.setText("Đơn hàng đang chờ nhân viên TT shop tiếp nhận.");
                 tvDetailStatusDesc.setText("Hệ thống đang kiểm tra đơn hàng của bạn.");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#E0F2FE"));
+                statusIcon = R.drawable.booking;
                 break;
             case "Đã xác nhận":
                 tvDeliveryNote.setText("TT shop đã xác nhận. Đang chuẩn bị đóng gói hàng.");
                 tvDetailStatusDesc.setText("Sản phẩm của bạn sẽ sớm được bàn giao cho đơn vị vận chuyển.");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#DBEAFE"));
+                statusIcon = R.drawable.checklist;
                 break;
             case "Vận chuyển":
                 tvDeliveryNote.setText("Đơn hàng đang trên đường tới trung tâm bưu cục.");
                 tvDetailStatusDesc.setText("Kiện hàng đã rời khỏi kho TT shop.");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#F0F9FF"));
+                statusIcon = R.drawable.tracking;
                 break;
             case "Đang giao":
                 tvDeliveryNote.setText("Shipper đang mang kiện hàng đến địa chỉ của bạn.");
                 tvDetailStatusDesc.setText("Hãy chuẩn bị nhận cuộc gọi và kiểm tra hàng nhé.");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#FEF3C7"));
+                statusIcon = R.drawable.shop;
                 break;
             case "Đã hủy":
                 tvDeliveryNote.setText("Đơn hàng này đã được hủy bỏ.");
                 tvDetailStatusDesc.setText("Rất tiếc! Hy vọng TT shop sẽ được phục vụ bạn ở lần tới.");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#F1F5F9"));
+                statusIcon = R.drawable.reject;
                 break;
             case "Đã hoàn tất":
             case "Đã hoàn thành":
                 tvDeliveryNote.setText("Giao hàng thành công. Cảm ơn bạn đã ủng hộ TT shop!");
                 tvDetailStatusDesc.setText("Chúc bạn có những trải nghiệm tuyệt vời với sản phẩm.");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#DCFCE7"));
+                statusIcon = R.drawable.product;
                 break;
             default:
                 tvDeliveryNote.setText("Kiện hàng đang được xử lý");
                 tvDetailStatusDesc.setText("Cảm ơn bạn đã mua sắm tại TT Shop");
                 layoutStatusBanner.setBackgroundColor(Color.parseColor("#F8FAFC"));
+                statusIcon = R.drawable.booking;
                 break;
+        }
+
+        if (imgDetailStatusIcon != null) {
+            imgDetailStatusIcon.setImageResource(statusIcon);
         }
 
         if (order.getTimestamp() != null) {

@@ -80,7 +80,6 @@ public class PaymentActivity extends AppCompatActivity {
             return;
         }
 
-        // Nhận dữ liệu sản phẩm từ Intent
         if (getIntent().hasExtra("SELECTED_ITEMS_DATA")) {
             selectedItems = (ArrayList<CartItem>) getIntent().getSerializableExtra("SELECTED_ITEMS_DATA");
         } else if (getIntent().hasExtra("SELECTED_ITEMS")) {
@@ -90,7 +89,6 @@ public class PaymentActivity extends AppCompatActivity {
         initViews();
         setupInsets();
 
-        // Kiểm tra và hiển thị dữ liệu ngay lập tức
         if (selectedItems != null && !selectedItems.isEmpty()) {
             renderProducts();
             updateUI();
@@ -195,7 +193,6 @@ public class PaymentActivity extends AppCompatActivity {
             totalQty += item.getQuantity();
         }
 
-        // Tính phí ship giả định: 1% giá trị đơn hàng, tối thiểu 30k
         shippingFee = (long) (subTotal * 0.01);
         if (shippingFee < 30000) shippingFee = 30000;
         
@@ -287,7 +284,10 @@ public class PaymentActivity extends AppCompatActivity {
             clearPurchasedItemsFromCart();
             if (selectedShippingVoucher != null) markVoucherUsed(selectedShippingVoucher.getId());
             if (selectedProductVoucher != null) markVoucherUsed(selectedProductVoucher.getId());
-            voucherService.checkAndRewardAfterOrder(auth.getUid());
+            
+            // CẬP NHẬT: Gửi thông báo chứa MÃ quà tặng
+            voucherService.checkAndRewardAfterOrder(auth.getUid(), firestoreId);
+
             Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_SHORT).show();
             
             Intent intent = new Intent(this, OderActivity.class);

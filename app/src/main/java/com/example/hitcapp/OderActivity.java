@@ -305,14 +305,30 @@ public class OderActivity extends AppCompatActivity {
 
             String statusDesc = "Kiện hàng đang được xử lý";
             String s = status.toLowerCase();
-            if (s.contains("chờ xác nhận")) statusDesc = "Đơn hàng đang chờ shop xác nhận";
-            else if (s.contains("đã xác nhận")) statusDesc = "Đơn hàng đã được xác nhận và đang chuẩn bị";
-            else if (s.contains("vận chuyển")) statusDesc = "Đang bàn giao cho đơn vị vận chuyển";
-            else if (s.contains("đang giao")) statusDesc = "Kiện hàng đang được giao đến bạn";
-            else if (s.contains("hoàn tất") || s.contains("hoàn thành") || s.contains("giao thành công")) statusDesc = "Đơn hàng đã được giao thành công";
-            else if (s.contains("hủy")) statusDesc = "Đơn hàng đã bị hủy";
+            int statusIcon = R.drawable.booking;
+
+            if (s.contains("chờ xác nhận")) {
+                statusDesc = "Đơn hàng đang chờ shop xác nhận";
+                statusIcon = R.drawable.booking;
+            } else if (s.contains("đã xác nhận")) {
+                statusDesc = "Đơn hàng đã được xác nhận và đang chuẩn bị";
+                statusIcon = R.drawable.checklist;
+            } else if (s.contains("vận chuyển")) {
+                statusDesc = "Đang bàn giao cho đơn vị vận chuyển";
+                statusIcon = R.drawable.tracking;
+            } else if (s.contains("đang giao")) {
+                statusDesc = "Kiện hàng đang được giao đến bạn";
+                statusIcon = R.drawable.shop;
+            } else if (s.contains("hoàn tất") || s.contains("hoàn thành") || s.contains("giao thành công")) {
+                statusDesc = "Đơn hàng đã được giao thành công";
+                statusIcon = R.drawable.product;
+            } else if (s.contains("hủy")) {
+                statusDesc = "Đơn hàng đã bị hủy";
+                statusIcon = R.drawable.reject;
+            }
             
             h.tvStatusDescription.setText(statusDesc);
+            h.imgStatusIcon.setImageResource(statusIcon);
             
             List<OrderItem> items = o.getItems();
             if (!items.isEmpty()) {
@@ -381,7 +397,7 @@ public class OderActivity extends AppCompatActivity {
         @Override public int getItemCount() { return list.size(); }
         class OrderViewHolder extends RecyclerView.ViewHolder {
             TextView tvOrderDate, tvItemStatus, tvItemProductName, tvItemDetails, tvItemTotalPrice, tvOriginalPrice, tvStatusDescription;
-            ImageView imgItemProduct, btnItemAddCart;
+            ImageView imgItemProduct, btnItemAddCart, imgStatusIcon;
             MaterialButton btnItemAction;
             OrderViewHolder(View v) {
                 super(v);
@@ -395,6 +411,7 @@ public class OderActivity extends AppCompatActivity {
                 imgItemProduct = v.findViewById(R.id.imgItemProduct);
                 btnItemAddCart = v.findViewById(R.id.btnItemAddCart);
                 btnItemAction = v.findViewById(R.id.btnItemAction);
+                imgStatusIcon = v.findViewById(R.id.imgStatusIcon);
             }
         }
     }
