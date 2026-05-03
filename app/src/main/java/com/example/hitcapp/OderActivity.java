@@ -59,6 +59,7 @@ public class OderActivity extends AppCompatActivity {
     
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private String currentFilter = "Tất cả";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,7 +82,7 @@ public class OderActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         updateCartBadge();
-        fetchAllOrders(); // Cập nhật danh sách khi quay lại
+        fetchAllOrders(); 
     }
 
     private void initViews() {
@@ -148,14 +149,15 @@ public class OderActivity extends AppCompatActivity {
         chipGroupStatus.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (checkedIds.isEmpty()) return;
             int checkedId = checkedIds.get(0);
-            String filter = "Tất cả";
-            if (checkedId == R.id.chipPending) filter = "Chờ xác nhận";
-            else if (checkedId == R.id.chipConfirmed) filter = "Đã xác nhận";
-            else if (checkedId == R.id.chipShipping) filter = "Vận chuyển";
-            else if (checkedId == R.id.chipDelivering) filter = "Đang giao";
-            else if (checkedId == R.id.chipCancelled) filter = "Đã hủy";
+            if (checkedId == R.id.chipPending) currentFilter = "Chờ xác nhận";
+            else if (checkedId == R.id.chipConfirmed) currentFilter = "Đã xác nhận";
+            else if (checkedId == R.id.chipShipping) currentFilter = "Vận chuyển";
+            else if (checkedId == R.id.chipDelivering) currentFilter = "Đang giao";
+            else if (checkedId == R.id.chipDelivered) currentFilter = "Giao thành công";
+            else if (checkedId == R.id.chipCancelled) currentFilter = "Đã hủy";
+            else currentFilter = "Tất cả";
             
-            filterList(filter);
+            filterList(currentFilter);
         });
     }
 
@@ -172,7 +174,7 @@ public class OderActivity extends AppCompatActivity {
         edtSearchOrder.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s.length() == 0) filterList("Tất cả");
+                if (s.length() == 0) filterList(currentFilter);
             }
             @Override public void afterTextChanged(Editable s) {}
         });
@@ -180,29 +182,39 @@ public class OderActivity extends AppCompatActivity {
 
     private void searchOrder(String query) {
         if (query.isEmpty()) {
-            filterList("Tất cả");
+            filterList(currentFilter);
             return;
         }
         displayOrderList.clear();
         for (Order o : fullOrderList) {
             boolean matches = false;
             if (o.getId() != null && o.getId().toLowerCase().contains(query.toLowerCase())) matches = true;
-            if (o.getProductName() != null && o.getProductName().toLowerCase().contains(query.toLowerCase())) {
-                matches = true;
+            
+            List<OrderItem> items = o.getItems();
+            for (OrderItem item : items) {
+                if (item.getName() != null && item.getName().toLowerCase().contains(query.toLowerCase())) {
+                    matches = true;
+                    break;
+                }
             }
+            
             if (matches) displayOrderList.add(o);
         }
         orderAdapter.notifyDataSetChanged();
         layoutEmptyOrders.setVisibility(displayOrderList.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    private void filterList(String status) {
+    private void filterList(String filterStatus) {
         displayOrderList.clear();
-        if (status.equals("Tất cả")) {
+        if (filterStatus.equals("Tất cả")) {
             displayOrderList.addAll(fullOrderList);
         } else {
+            String filterLower = filterStatus.toLowerCase().trim();
             for (Order o : fullOrderList) {
-                if (status.equalsIgnoreCase(o.getStatus())) displayOrderList.add(o);
+                String orderStatus = o.getStatus() != null ? o.getStatus().toLowerCase().trim() : "";
+                if (orderStatus.contains(filterLower)) {
+                    displayOrderList.add(o);
+                }
             }
         }
         orderAdapter.notifyDataSetChanged();
@@ -231,20 +243,25 @@ public class OderActivity extends AppCompatActivity {
                         return o2.getTimestamp().compareTo(o1.getTimestamp());
                     });
                     
-                    filterList("Tất cả"); 
-                    if (!fullOrderList.isEmpty() && fullOrderList.get(0).getProductId() != null) {
-                        fetchRelatedProducts(fullOrderList.get(0));
-                    } else {
-                        fetchDefaultRelated();
-                    }
+                    filterList(currentFilter); 
                     
+                    if (!fullOrderList.isEmpty()) {
+                        Order lastOrder = fullOrderList.get(0);
+                        List<OrderItem> items = lastOrder.getItems();
+                        if (!items.isEmpty()) fetchRelatedProducts(items.get(0).getProductId());
+                        else fetchDefaultRelated();
+                    } else fetchDefaultRelated();
+                    
+                    if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
+                })
+                .addOnFailureListener(e -> {
                     if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
                 });
     }
 
-    private void fetchRelatedProducts(Order lastOrder) {
-        if (lastOrder.getProductId() == null) return;
-        db.collection("products").document(lastOrder.getProductId()).get().addOnSuccessListener(ds -> {
+    private void fetchRelatedProducts(String productId) {
+        if (productId == null) return;
+        db.collection("products").document(productId).get().addOnSuccessListener(ds -> {
             Product p = ds.toObject(Product.class);
             if (p != null) {
                 db.collection("products").whereEqualTo("category", p.getCategory()).limit(6).get().addOnSuccessListener(qs -> {
@@ -256,7 +273,7 @@ public class OderActivity extends AppCompatActivity {
                     }
                     relatedAdapter.notifyDataSetChanged();
                 });
-            }
+            } else fetchDefaultRelated();
         });
     }
 
@@ -282,16 +299,38 @@ public class OderActivity extends AppCompatActivity {
         @Override public void onBindViewHolder(@NonNull OrderViewHolder h, int pos) {
             Order o = list.get(pos);
             if (o.getTimestamp() != null) h.tvOrderDate.setText(sdf.format(o.getTimestamp().toDate()));
-            h.tvItemStatus.setText(o.getStatus());
             
-            h.tvItemProductName.setText(o.getProductName());
-            h.tvItemDetails.setText("Số lượng: " + o.getQuantity());
-            Glide.with(h.itemView.getContext())
-                    .load(o.getImageUrl())
-                    .placeholder(R.drawable.phone_mockup)
-                    .into(h.imgItemProduct);
+            String status = o.getStatus() != null ? o.getStatus().trim() : "Chờ xác nhận";
+            h.tvItemStatus.setText(status);
 
-            // Hiển thị giá
+            String statusDesc = "Kiện hàng đang được xử lý";
+            String s = status.toLowerCase();
+            if (s.contains("chờ xác nhận")) statusDesc = "Đơn hàng đang chờ shop xác nhận";
+            else if (s.contains("đã xác nhận")) statusDesc = "Đơn hàng đã được xác nhận và đang chuẩn bị";
+            else if (s.contains("vận chuyển")) statusDesc = "Đang bàn giao cho đơn vị vận chuyển";
+            else if (s.contains("đang giao")) statusDesc = "Kiện hàng đang được giao đến bạn";
+            else if (s.contains("hoàn tất") || s.contains("hoàn thành") || s.contains("giao thành công")) statusDesc = "Đơn hàng đã được giao thành công";
+            else if (s.contains("hủy")) statusDesc = "Đơn hàng đã bị hủy";
+            
+            h.tvStatusDescription.setText(statusDesc);
+            
+            List<OrderItem> items = o.getItems();
+            if (!items.isEmpty()) {
+                OrderItem firstItem = items.get(0);
+                String displayTitle = firstItem.getName();
+                if (items.size() > 1) displayTitle += " và " + (items.size() - 1) + " sản phẩm khác";
+                h.tvItemProductName.setText(displayTitle);
+                
+                int totalQty = 0;
+                for (OrderItem item : items) totalQty += item.getQuantity();
+                h.tvItemDetails.setText("Tổng số lượng: " + totalQty);
+                
+                Glide.with(h.itemView.getContext())
+                        .load(firstItem.getImageUrl())
+                        .placeholder(R.drawable.phone_mockup)
+                        .into(h.imgItemProduct);
+            }
+
             long originalPrice = o.getTotalPrice() + o.getShippingFee();
             long finalPrice = o.getFinalPrice();
 
@@ -318,30 +357,22 @@ public class OderActivity extends AppCompatActivity {
         private void addOrderToCart(Order order) {
             if (auth.getCurrentUser() == null) return;
             String userId = auth.getUid();
-            
-            CartItem cartItem = new CartItem(
-                    userId, order.getProductId(), order.getProductName(), "", 
-                    order.getTotalPrice() / (order.getQuantity() > 0 ? order.getQuantity() : 1), 
-                    order.getTotalPrice() / (order.getQuantity() > 0 ? order.getQuantity() : 1), 
-                    order.getQuantity(), order.getImageUrl()
-            );
-            db.collection("carts").add(cartItem);
-            
-            Toast.makeText(OderActivity.this, "TT Shop đã thêm sản phẩm vào giỏ hàng cho bạn!", Toast.LENGTH_SHORT).show();
+            for (OrderItem item : order.getItems()) {
+                CartItem cartItem = new CartItem(userId, item.getProductId(), item.getName(), "", 
+                        item.getPrice(), item.getPrice(), item.getQuantity(), item.getImageUrl());
+                db.collection("carts").add(cartItem);
+            }
+            Toast.makeText(OderActivity.this, "TT Shop đã thêm sản phẩm vào giỏ hàng!", Toast.LENGTH_SHORT).show();
             updateCartBadge();
         }
 
         private void buyOrderAgain(Order order) {
             if (auth.getCurrentUser() == null) return;
             ArrayList<CartItem> selectedItems = new ArrayList<>();
-            
-            selectedItems.add(new CartItem(
-                    auth.getUid(), order.getProductId(), order.getProductName(), "",
-                    order.getTotalPrice() / (order.getQuantity() > 0 ? order.getQuantity() : 1),
-                    order.getTotalPrice() / (order.getQuantity() > 0 ? order.getQuantity() : 1),
-                    order.getQuantity(), order.getImageUrl()
-            ));
-            
+            for (OrderItem item : order.getItems()) {
+                selectedItems.add(new CartItem(auth.getUid(), item.getProductId(), item.getName(), "",
+                        item.getPrice(), item.getPrice(), item.getQuantity(), item.getImageUrl()));
+            }
             Intent intent = new Intent(OderActivity.this, PaymentActivity.class);
             intent.putExtra("SELECTED_ITEMS_DATA", selectedItems);
             startActivity(intent);
@@ -349,7 +380,7 @@ public class OderActivity extends AppCompatActivity {
 
         @Override public int getItemCount() { return list.size(); }
         class OrderViewHolder extends RecyclerView.ViewHolder {
-            TextView tvOrderDate, tvItemStatus, tvItemProductName, tvItemDetails, tvItemTotalPrice, tvOriginalPrice;
+            TextView tvOrderDate, tvItemStatus, tvItemProductName, tvItemDetails, tvItemTotalPrice, tvOriginalPrice, tvStatusDescription;
             ImageView imgItemProduct, btnItemAddCart;
             MaterialButton btnItemAction;
             OrderViewHolder(View v) {
@@ -359,7 +390,8 @@ public class OderActivity extends AppCompatActivity {
                 tvItemProductName = v.findViewById(R.id.tvItemProductName);
                 tvItemDetails = v.findViewById(R.id.tvItemDetails);
                 tvItemTotalPrice = v.findViewById(R.id.tvItemTotalPrice);
-                tvOriginalPrice = v.findViewById(R.id.tvOriginalPrice); // Cần thêm vào layout
+                tvOriginalPrice = v.findViewById(R.id.tvOriginalPrice);
+                tvStatusDescription = v.findViewById(R.id.tvStatusDescription);
                 imgItemProduct = v.findViewById(R.id.imgItemProduct);
                 btnItemAddCart = v.findViewById(R.id.btnItemAddCart);
                 btnItemAction = v.findViewById(R.id.btnItemAction);

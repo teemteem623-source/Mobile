@@ -9,7 +9,7 @@ public class Order implements Serializable {
     private String id;
     private String orderId;
     private String userId;
-    private String productId;
+    private String productId; // Giữ lại để tương thích ngược hoặc cho đơn hàng 1 sản phẩm
     private String productName;
     private String imageUrl;
     private int quantity;
@@ -25,7 +25,12 @@ public class Order implements Serializable {
     private String paymentMethod;
     private long shippingFee;
 
-    public Order() {}
+    // Danh sách sản phẩm trong đơn hàng
+    private List<OrderItem> items;
+
+    public Order() {
+        this.items = new ArrayList<>();
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -75,6 +80,28 @@ public class Order implements Serializable {
     public long getShippingFee() { return shippingFee; }
     public void setShippingFee(long shippingFee) { this.shippingFee = shippingFee; }
 
+    public List<OrderItem> getItems() {
+        if (items == null || items.isEmpty()) {
+            // Nếu items trống, thử tạo từ thông tin sản phẩm đơn lẻ (tương thích ngược)
+            List<OrderItem> fallbackItems = new ArrayList<>();
+            if (productId != null && !productId.isEmpty()) {
+                OrderItem item = new OrderItem();
+                item.setProductId(this.productId);
+                item.setName(this.productName != null ? this.productName : "Sản phẩm");
+                item.setImageUrl(this.imageUrl);
+                item.setQuantity(this.quantity);
+                item.setPrice(this.totalPrice / (quantity > 0 ? quantity : 1));
+                fallbackItems.add(item);
+            }
+            return fallbackItems;
+        }
+        return items; 
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
+    }
+
     // Các phương thức trợ giúp để tương thích với Activity
     public Timestamp getTimestamp() { return createAt; }
     
@@ -83,19 +110,4 @@ public class Order implements Serializable {
     }
     
     public String getAddress() { return shippingAddress; }
-
-    public List<OrderItem> getItems() {
-        List<OrderItem> items = new ArrayList<>();
-        if (productId != null && !productId.isEmpty()) {
-            OrderItem item = new OrderItem();
-            item.setProductId(this.productId);
-            item.setName(this.productName != null ? this.productName : "Sản phẩm");
-            item.setImageUrl(this.imageUrl);
-            item.setQuantity(this.quantity);
-            // Giả định đơn giá = tổng giá / số lượng nếu không lưu riêng
-            item.setPrice(this.totalPrice / (quantity > 0 ? quantity : 1));
-            items.add(item);
-        }
-        return items;
-    }
 }

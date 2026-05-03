@@ -35,12 +35,16 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.UserInfo;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AccountManagementActivity extends AppCompatActivity {
 
@@ -49,6 +53,7 @@ public class AccountManagementActivity extends AppCompatActivity {
     private MaterialButton btnAddAccount;
     private ImageView btnBack;
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
     private List<AddUserActivity.UserAccount> accountList;
     private List<AddUserActivity.UserAccount> displayList;
     private AccountAdapter adapter;
@@ -63,6 +68,7 @@ public class AccountManagementActivity extends AppCompatActivity {
         setContentView(R.layout.activity_account_management);
 
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
         sharedPreferences = getSharedPreferences("MultiAccountPrefs", MODE_PRIVATE);
 
         initViews();
@@ -179,6 +185,17 @@ public class AccountManagementActivity extends AppCompatActivity {
                 .setTitle("Xóa liên kết")
                 .setMessage("Bạn có chắc chắn muốn xóa liên kết với tài khoản " + account.email + "?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
+                    FirebaseUser current = mAuth.getCurrentUser();
+                    if (current != null) {
+                        // Thông báo cho bên dùng để thêm (tài khoản hiện tại)
+                        sendNotification(current.getUid(), "Đã xóa tài khoản thêm", 
+                            "Bạn đã xóa liên kết với tài khoản " + account.email, "Hệ thống");
+                        
+                        // Thông báo cho bên được thêm (tài khoản bị xóa liên kết)
+                        sendNotification(account.uid, "Đã hủy liên kết", 
+                            "Tài khoản của bạn đã bị hủy liên kết khỏi tài khoản " + current.getEmail(), "Hệ thống");
+                    }
+
                     accountList.remove(account);
                     saveAccounts();
                     updateDisplayList();
@@ -186,6 +203,16 @@ public class AccountManagementActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
+    }
+
+    private void sendNotification(String userId, String title, String content, String type) {
+        Map<String, Object> notice = new HashMap<>();
+        notice.put("userId", userId);
+        notice.put("title", title);
+        notice.put("content", content);
+        notice.put("type", type);
+        notice.put("timestamp", FieldValue.serverTimestamp());
+        db.collection("notifications").add(notice);
     }
 
     private void switchAccount(AddUserActivity.UserAccount account) {
@@ -253,7 +280,6 @@ public class AccountManagementActivity extends AppCompatActivity {
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                // Dính sát cạnh trái phải, không set padding bottom ở đây để nút dưới cùng xử lý
                 v.setPadding(systemBars.left, 0, systemBars.right, 0); 
                 return insets;
             });
@@ -261,7 +287,6 @@ public class AccountManagementActivity extends AppCompatActivity {
         if (topBar != null) {
             ViewCompat.setOnApplyWindowInsetsListener(topBar, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                // Dính sát thanh trạng thái (StatusBar)
                 v.setPadding(v.getPaddingLeft(), systemBars.top, v.getPaddingRight(), v.getPaddingBottom());
                 return insets;
             });
@@ -270,7 +295,6 @@ public class AccountManagementActivity extends AppCompatActivity {
             ViewCompat.setOnApplyWindowInsetsListener(footerBtn, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                 ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-                // Khoảng cách 20dp từ mép dưới hệ thống (NavigationBar)
                 lp.bottomMargin = systemBars.bottom + (int) (20 * getResources().getDisplayMetrics().density);
                 v.setLayoutParams(lp);
                 return insets;
@@ -303,7 +327,6 @@ public class AccountManagementActivity extends AppCompatActivity {
             holder.tvType.setText(isGoogle ? "Tài khoản Google" : "Tài khoản Email");
             holder.imgType.setImageResource(isGoogle ? R.drawable.goole : R.drawable.people);
             
-            // XỬ LÝ MÀU ICON: Google giữ nguyên màu, Email dùng màu xanh chủ đạo
             if (!isGoogle) {
                 holder.imgType.setColorFilter(Color.parseColor("#1E40AF"));
             } else {

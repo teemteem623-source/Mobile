@@ -3,6 +3,7 @@ package com.example.hitcapp;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.hitcapp.models.Voucher;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
@@ -45,6 +47,7 @@ public class VoucherActivity extends AppCompatActivity {
     private EditText edtCode;
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private ListenerRegistration voucherListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +58,6 @@ public class VoucherActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
 
-        // Nhận voucher đã chọn từ PaymentActivity
         if (getIntent().hasExtra("PRE_SELECTED_SHIPPING")) {
             selectedShippingVoucher = (Voucher) getIntent().getSerializableExtra("PRE_SELECTED_SHIPPING");
         }
@@ -63,6 +65,12 @@ public class VoucherActivity extends AppCompatActivity {
             selectedProductVoucher = (Voucher) getIntent().getSerializableExtra("PRE_SELECTED_PRODUCT");
         }
 
+        initViews();
+        setupRecyclerViews();
+        startListeningVouchers();
+    }
+
+    private void initViews() {
         View mainView = findViewById(R.id.main);
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
@@ -78,7 +86,17 @@ public class VoucherActivity extends AppCompatActivity {
         edtCode = findViewById(R.id.edtVoucherCode);
         tvStatus = findViewById(R.id.tvCodeStatus);
         findViewById(R.id.btnApplyCode).setOnClickListener(v -> applyVoucherCode());
+        
+        findViewById(R.id.btnConfirmVoucher).setOnClickListener(v -> {
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("SELECTED_SHIPPING", selectedShippingVoucher);
+            resultIntent.putExtra("SELECTED_PRODUCT", selectedProductVoucher);
+            setResult(RESULT_OK, resultIntent);
+            finish();
+        });
+    }
 
+    private void setupRecyclerViews() {
         rvShipping = findViewById(R.id.rvShippingVouchers);
         rvProduct = findViewById(R.id.rvProductVouchers);
 
@@ -90,16 +108,45 @@ public class VoucherActivity extends AppCompatActivity {
 
         rvShipping.setAdapter(shippingAdapter);
         rvProduct.setAdapter(productAdapter);
+    }
 
-        findViewById(R.id.btnConfirmVoucher).setOnClickListener(v -> {
-            Intent resultIntent = new Intent();
-            resultIntent.putExtra("SELECTED_SHIPPING", selectedShippingVoucher);
-            resultIntent.putExtra("SELECTED_PRODUCT", selectedProductVoucher);
-            setResult(RESULT_OK, resultIntent);
-            finish();
-        });
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (voucherListener != null) voucherListener.remove();
+    }
 
-        loadVouchers();
+    private void startListeningVouchers() {
+        String uid = auth.getUid();
+        if (uid == null) return;
+
+        voucherListener = db.collection("vouchers")
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("used", false)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        Log.e("VoucherActivity", "Listen failed.", error);
+                        return;
+                    }
+
+                    if (value != null) {
+                        shippingList.clear();
+                        productList.clear();
+                        for (QueryDocumentSnapshot doc : value) {
+                            Voucher v = doc.toObject(Voucher.class);
+                            v.setId(doc.getId());
+                            
+                            // Sử dụng equals an toàn để tránh NPE nếu type bị null trong DB
+                            if (Voucher.TYPE_SHIPPING.equals(v.getType())) {
+                                shippingList.add(v);
+                            } else {
+                                productList.add(v);
+                            }
+                        }
+                        shippingAdapter.notifyDataSetChanged();
+                        productAdapter.notifyDataSetChanged();
+                    }
+                });
     }
 
     private void applyVoucherCode() {
@@ -116,44 +163,21 @@ public class VoucherActivity extends AppCompatActivity {
                         Voucher v = doc.toObject(Voucher.class);
                         v.setId(doc.getId());
                         
-                        if (v.getType().equals(Voucher.TYPE_SHIPPING)) {
+                        if (Voucher.TYPE_SHIPPING.equals(v.getType())) {
                             selectedShippingVoucher = v;
-                            shippingAdapter.notifyDataSetChanged();
                         } else {
                             selectedProductVoucher = v;
-                            productAdapter.notifyDataSetChanged();
                         }
                         tvStatus.setVisibility(View.VISIBLE);
                         tvStatus.setText("Áp dụng mã thành công!");
                         tvStatus.setTextColor(Color.parseColor("#10B981"));
+                        shippingAdapter.notifyDataSetChanged();
+                        productAdapter.notifyDataSetChanged();
                     } else {
                         tvStatus.setVisibility(View.VISIBLE);
                         tvStatus.setText("Mã không hợp lệ hoặc đã hết hạn");
                         tvStatus.setTextColor(Color.parseColor("#EF4444"));
                     }
-                });
-    }
-
-    private void loadVouchers() {
-        if (auth.getUid() == null) return;
-        db.collection("vouchers")
-                .whereEqualTo("userId", auth.getUid())
-                .whereEqualTo("used", false)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    shippingList.clear();
-                    productList.clear();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        Voucher v = doc.toObject(Voucher.class);
-                        v.setId(doc.getId());
-                        if (v.getType().equals(Voucher.TYPE_SHIPPING)) {
-                            shippingList.add(v);
-                        } else {
-                            productList.add(v);
-                        }
-                    }
-                    shippingAdapter.notifyDataSetChanged();
-                    productAdapter.notifyDataSetChanged();
                 });
     }
 
@@ -179,30 +203,24 @@ public class VoucherActivity extends AppCompatActivity {
             
             if (item.getExpiryTimestamp() > 0) {
                 holder.tvExpiry.setText(String.format("HSD: %s", sdf.format(item.getExpiryTimestamp())));
+            } else {
+                holder.tvExpiry.setText("Không thời hạn");
             }
 
             final boolean isCurrentlySelected;
             if (isShipping) {
-                isCurrentlySelected = selectedShippingVoucher != null && selectedShippingVoucher.getId() != null && selectedShippingVoucher.getId().equals(item.getId());
+                isCurrentlySelected = selectedShippingVoucher != null && item.getId().equals(selectedShippingVoucher.getId());
             } else {
-                isCurrentlySelected = selectedProductVoucher != null && selectedProductVoucher.getId() != null && selectedProductVoucher.getId().equals(item.getId());
+                isCurrentlySelected = selectedProductVoucher != null && item.getId().equals(selectedProductVoucher.getId());
             }
             
             holder.cbSelect.setChecked(isCurrentlySelected);
 
             holder.itemView.setOnClickListener(v -> {
                 if (isShipping) {
-                    if (isCurrentlySelected) {
-                        selectedShippingVoucher = null;
-                    } else {
-                        selectedShippingVoucher = item;
-                    }
+                    selectedShippingVoucher = isCurrentlySelected ? null : item;
                 } else {
-                    if (isCurrentlySelected) {
-                        selectedProductVoucher = null;
-                    } else {
-                        selectedProductVoucher = item;
-                    }
+                    selectedProductVoucher = isCurrentlySelected ? null : item;
                 }
                 notifyDataSetChanged();
             });

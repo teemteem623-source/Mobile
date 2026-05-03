@@ -17,6 +17,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
@@ -137,6 +138,10 @@ public class ProfileActivity extends AppCompatActivity {
                 .addOnSuccessListener(aVoid -> {
                     btnUpdate.setEnabled(true);
                     btnUpdate.setText("CẬP NHẬT THÔNG TIN");
+                    
+                    // Gửi thông báo hệ thống
+                    sendNotification("Cập nhật thông tin thành công", "Thông tin cá nhân của bạn đã được cập nhật thành công.", "Hệ thống");
+                    
                     Toast.makeText(ProfileActivity.this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
                     finish();
                 })
@@ -145,6 +150,16 @@ public class ProfileActivity extends AppCompatActivity {
                     btnUpdate.setText("CẬP NHẬT THÔNG TIN");
                     Toast.makeText(ProfileActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private void sendNotification(String title, String content, String type) {
+        Map<String, Object> notice = new HashMap<>();
+        notice.put("userId", userId);
+        notice.put("title", title);
+        notice.put("content", content);
+        notice.put("type", type);
+        notice.put("timestamp", FieldValue.serverTimestamp());
+        mFirestore.collection("notifications").add(notice);
     }
 
     private void setupWindowInsets() {
