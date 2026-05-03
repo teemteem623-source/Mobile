@@ -24,18 +24,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.hitcapp.models.Voucher;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
 
 public class VoucherActivity extends AppCompatActivity {
 
@@ -72,12 +68,6 @@ public class VoucherActivity extends AppCompatActivity {
         initViews();
         setupRecyclerViews();
         startListeningVouchers();
-
-        // Tự động nhập mã nếu đi từ thông báo
-        String autoFillCode = getIntent().getStringExtra("AUTO_FILL_CODE");
-        if (autoFillCode != null && !autoFillCode.isEmpty()) {
-            edtCode.setText(autoFillCode);
-        }
     }
 
     private void initViews() {
@@ -146,6 +136,7 @@ public class VoucherActivity extends AppCompatActivity {
                             Voucher v = doc.toObject(Voucher.class);
                             v.setId(doc.getId());
                             
+                            // Sử dụng equals an toàn để tránh NPE nếu type bị null trong DB
                             if (Voucher.TYPE_SHIPPING.equals(v.getType())) {
                                 shippingList.add(v);
                             } else {
@@ -159,16 +150,9 @@ public class VoucherActivity extends AppCompatActivity {
     }
 
     private void applyVoucherCode() {
-        String code = edtCode.getText().toString().trim().toUpperCase();
+        String code = edtCode.getText().toString().trim();
         if (code.isEmpty()) return;
 
-        // Kiểm tra xem mã có phải mã tri ân không
-        if (isLoyaltyCode(code)) {
-            handleLoyaltyCode(code);
-            return;
-        }
-
-        // Kiểm tra mã voucher bình thường trong DB
         db.collection("vouchers")
                 .whereEqualTo("code", code)
                 .whereEqualTo("used", false)
@@ -197,121 +181,6 @@ public class VoucherActivity extends AppCompatActivity {
                 });
     }
 
-    private boolean isLoyaltyCode(String code) {
-        // Danh sách mã tri ân hệ thống
-        String[] loyaltyCodes = {
-                "VANNANG", "TRIAN", "FREE", "HITCAPP", 
-                "QUATANG", "NHANHAY", "GIAMGIASOC", "VOUCHER100", 
-                "VOUCHER500", "VOUCHER2TR", "NEWUSER", "MOBILE2024", 
-                "HITCAPPVIP", "TRIANHITC", "SIEUVOUCHER", "MUAHE"
-        };
-        for (String c : loyaltyCodes) {
-            if (c.equals(code)) return true;
-        }
-        return false;
-    }
-
-    private void handleLoyaltyCode(final String code) {
-        final String uid = auth.getUid();
-        if (uid == null) return;
-
-        // Kiểm tra xem người dùng đã nhận voucher từ mã này chưa (mỗi mã 1 lần/tài khoản)
-        db.collection("vouchers")
-                .whereEqualTo("userId", uid)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    boolean alreadyUsed = false;
-                    if (queryDocumentSnapshots != null) {
-                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                            String existingCode = doc.getString("code");
-                            if (existingCode != null && existingCode.startsWith(code + "_")) {
-                                alreadyUsed = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (alreadyUsed) {
-                        tvStatus.setVisibility(View.VISIBLE);
-                        tvStatus.setText("Bạn đã sử dụng mã này rồi!");
-                        tvStatus.setTextColor(Color.parseColor("#EF4444"));
-                    } else {
-                        generateAndAddReward(code, uid);
-                    }
-                });
-    }
-
-    private void generateAndAddReward(String code, String uid) {
-        // Tỷ lệ trúng: 1% 2tr, 9% 1tr, 15% 500k, 25% 100k, 50% freeship
-        int random = new Random().nextInt(100); 
-        String title, desc, type;
-        long value;
-
-        if (random < 1) {
-            title = "Voucher Tri Ân 2 Triệu";
-            desc = "Giảm trực tiếp 2.000.000đ cho đơn hàng";
-            value = 2000000;
-            type = Voucher.TYPE_DISCOUNT;
-        } else if (random < 10) {
-            title = "Voucher Tri Ân 1 Triệu";
-            desc = "Giảm trực tiếp 1.000.000đ cho đơn hàng";
-            value = 1000000;
-            type = Voucher.TYPE_DISCOUNT;
-        } else if (random < 25) {
-            title = "Voucher Tri Ân 500K";
-            desc = "Giảm ngay 500.000đ cho đơn hàng";
-            value = 500000;
-            type = Voucher.TYPE_DISCOUNT;
-        } else if (random < 50) {
-            title = "Voucher Tri Ân 100K";
-            desc = "Giảm ngay 100.000đ cho đơn hàng";
-            value = 100000;
-            type = Voucher.TYPE_DISCOUNT;
-        } else {
-            title = "Voucher Freeship Toàn Quốc";
-            desc = "Miễn phí vận chuyển cho mọi đơn hàng";
-            value = 30000;
-            type = Voucher.TYPE_SHIPPING;
-        }
-
-        Voucher newVoucher = new Voucher();
-        newVoucher.setCode(code + "_" + System.currentTimeMillis());
-        newVoucher.setTitle(title);
-        newVoucher.setDescription(desc);
-        newVoucher.setUserId(uid);
-        newVoucher.setValue(value);
-        newVoucher.setType(type);
-        newVoucher.setUsed(false);
-        newVoucher.setExpiryTimestamp(System.currentTimeMillis() + (7L * 24 * 60 * 60 * 1000));
-
-        db.collection("vouchers").add(newVoucher)
-                .addOnSuccessListener(documentReference -> {
-                    tvStatus.setVisibility(View.VISIBLE);
-                    tvStatus.setText("Chúc mừng! Bạn nhận được: " + title);
-                    tvStatus.setTextColor(Color.parseColor("#10B981"));
-                    addRewardNotification(title, desc, type);
-                    edtCode.setText("");
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Có lỗi xảy ra, vui lòng thử lại", Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    private void addRewardNotification(String title, String desc, String voucherType) {
-        String uid = auth.getUid();
-        if (uid == null) return;
-
-        Map<String, Object> notification = new HashMap<>();
-        notification.put("userId", uid);
-        notification.put("title", "Bạn vừa nhận được Voucher!");
-        notification.put("content", "Chúc mừng bạn đã nhận được " + title + ": " + desc);
-        notification.put("type", "Khuyến mãi");
-        notification.put("voucherType", voucherType);
-        notification.put("timestamp", FieldValue.serverTimestamp());
-
-        db.collection("notifications").add(notification);
-    }
-
     private class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.ViewHolder> {
         private final List<Voucher> list;
         private final boolean isShipping;
@@ -332,14 +201,6 @@ public class VoucherActivity extends AppCompatActivity {
             holder.tvTitle.setText(item.getTitle());
             holder.tvDesc.setText(item.getDescription());
             
-            // Cập nhật icon dựa trên loại voucher
-            if (Voucher.TYPE_SHIPPING.equals(item.getType())) {
-                holder.imgIcon.setImageResource(R.drawable.logistic);
-            } else {
-                holder.imgIcon.setImageResource(R.drawable.voucher);
-            }
-            holder.imgIcon.clearColorFilter(); // Giữ nguyên màu PNG
-
             if (item.getExpiryTimestamp() > 0) {
                 holder.tvExpiry.setText(String.format("HSD: %s", sdf.format(item.getExpiryTimestamp())));
             } else {
@@ -369,13 +230,11 @@ public class VoucherActivity extends AppCompatActivity {
 
         class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvTitle, tvDesc, tvExpiry;
-            ImageView imgIcon;
             CheckBox cbSelect;
             ViewHolder(View v) { super(v);
                 tvTitle = v.findViewById(R.id.tvVoucherTitle);
                 tvDesc = v.findViewById(R.id.tvVoucherDesc);
                 tvExpiry = v.findViewById(R.id.tvExpiry);
-                imgIcon = v.findViewById(R.id.imgVoucherIcon);
                 cbSelect = v.findViewById(R.id.cbSelect);
             }
         }
