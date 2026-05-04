@@ -22,6 +22,7 @@ import com.example.hitcapp.models.CartItem;
 import com.example.hitcapp.models.Product;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -81,10 +82,16 @@ public class DetailActivity extends AppCompatActivity {
                 .whereEqualTo("userId", auth.getCurrentUser().getUid())
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int count = queryDocumentSnapshots.size();
-                    if (count > 0) {
+                    int totalQuantity = 0;
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        Long qty = doc.getLong("quantity");
+                        if (qty != null) {
+                            totalQuantity += qty.intValue();
+                        }
+                    }
+                    if (totalQuantity > 0) {
                         tvCartBadge.setVisibility(View.VISIBLE);
-                        tvCartBadge.setText(String.valueOf(count));
+                        tvCartBadge.setText(String.valueOf(totalQuantity));
                     } else {
                         tvCartBadge.setVisibility(View.GONE);
                     }

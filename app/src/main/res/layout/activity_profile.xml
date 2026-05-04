@@ -93,12 +93,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Họ và tên"
-                android:textColorHint="#94A3B8"
-                app:hintTextColor="#64748B"
-                app:boxStrokeColor="#000000"
+                android:textColorHint="#444444"
+                app:hintTextColor="#1E40AF"
+                app:boxStrokeColor="#1E40AF"
                 app:boxStrokeWidth="1.5dp"
                 app:startIconDrawable="@android:drawable/ic_menu_myplaces"
-                app:startIconTint="#000000">
+                app:startIconTint="#051EED">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfileName"
                     android:layout_width="match_parent"
@@ -115,12 +115,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Số điện thoại"
-                android:textColorHint="#94A3B8"
-                app:hintTextColor="#64748B"
-                app:boxStrokeColor="#000000"
+                android:textColorHint="#444444"
+                app:hintTextColor="#1E40AF"
+                app:boxStrokeColor="#1E40AF"
                 app:boxStrokeWidth="1.5dp"
                 app:startIconDrawable="@android:drawable/ic_menu_call"
-                app:startIconTint="#000000">
+                app:startIconTint="#051EED">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfilePhone"
                     android:layout_width="match_parent"
@@ -137,12 +137,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Email"
-                android:textColorHint="#94A3B8"
-                app:hintTextColor="#64748B"
-                app:boxStrokeColor="#000000"
+                android:textColorHint="#444444"
+                app:hintTextColor="#1E40AF"
+                app:boxStrokeColor="#1E40AF"
                 app:boxStrokeWidth="1.5dp"
                 app:startIconDrawable="@android:drawable/ic_dialog_email"
-                app:startIconTint="#000000">
+                app:startIconTint="#1E40AF">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfileEmail"
                     android:layout_width="match_parent"
@@ -160,12 +160,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Địa chỉ"
-                android:textColorHint="#94A3B8"
-                app:hintTextColor="#64748B"
-                app:boxStrokeColor="#000000"
+                android:textColorHint="#444444"
+                app:hintTextColor="#1E40AF"
+                app:boxStrokeColor="#1E40AF"
                 app:boxStrokeWidth="1.5dp"
                 app:startIconDrawable="@android:drawable/ic_menu_directions"
-                app:startIconTint="#000000">
+                app:startIconTint="#051EED">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProfileAddress"
                     android:layout_width="match_parent"
@@ -186,14 +186,7 @@
                 android:orientation="horizontal"
                 android:gravity="end">
 
-                <TextView
-                    android:id="@+id/tvChangePassword"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Đổi mật khẩu?"
-                    android:textColor="#1E40AF"
-                    android:textStyle="bold"
-                    android:padding="12dp" />
+
             </LinearLayout>
 
         </LinearLayout>

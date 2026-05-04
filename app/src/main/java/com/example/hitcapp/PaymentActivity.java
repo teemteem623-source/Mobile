@@ -259,6 +259,10 @@ public class PaymentActivity extends AppCompatActivity {
             itemsList.add(itemMap);
         }
 
+        // Đảm bảo finalPrice không âm
+        long finalPriceValue = totalOriginalPrice + shippingFee - shippingDiscount - productDiscount;
+        if (finalPriceValue < 0) finalPriceValue = 0;
+
         Map<String, Object> order = new HashMap<>();
         order.put("orderId", orderIdText);
         order.put("userId", auth.getUid());
@@ -269,7 +273,7 @@ public class PaymentActivity extends AppCompatActivity {
         order.put("paymentMethod", rbBank.isChecked() ? "Chuyển khoản" : "COD");
         order.put("totalPrice", totalOriginalPrice);
         order.put("shippingFee", shippingFee);
-        order.put("finalPrice", totalOriginalPrice + shippingFee - shippingDiscount - productDiscount);
+        order.put("finalPrice", finalPriceValue);
         order.put("createAt", FieldValue.serverTimestamp());
         order.put("items", itemsList);
 
@@ -283,11 +287,16 @@ public class PaymentActivity extends AppCompatActivity {
 
         db.collection("orders").add(order).addOnSuccessListener(documentReference -> {
             String firestoreId = documentReference.getId();
+            // Gửi thông báo mua hàng thành công có kèm ID đơn hàng
             sendNotification("Mua hàng thành công", "Đơn hàng #" + orderIdText + " đã được đặt thành công.", "Đơn hàng", firestoreId);
+            
             clearPurchasedItemsFromCart();
             if (selectedShippingVoucher != null) markVoucherUsed(selectedShippingVoucher.getId());
             if (selectedProductVoucher != null) markVoucherUsed(selectedProductVoucher.getId());
-            voucherService.checkAndRewardAfterOrder(auth.getUid());
+            
+            // Loại bỏ checkAndRewardAfterOrder để tránh lặp mã voucher (NoticeActivity sẽ lo việc này)
+            // voucherService.checkAndRewardAfterOrder(auth.getUid());
+            
             Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_SHORT).show();
             
             Intent intent = new Intent(this, OderActivity.class);
@@ -303,7 +312,7 @@ public class PaymentActivity extends AppCompatActivity {
         notice.put("title", title);
         notice.put("content", content);
         notice.put("type", type);
-        notice.put("oderId", oderId);
+        notice.put("oderId", oderId); // firestoreId
         notice.put("timestamp", FieldValue.serverTimestamp());
         db.collection("notifications").add(notice);
     }

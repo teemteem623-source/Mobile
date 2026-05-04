@@ -75,9 +75,6 @@ public class ProfileActivity extends AppCompatActivity {
         });
 
         btnUpdate.setOnClickListener(v -> pushProfileToFirestore());
-
-        findViewById(R.id.tvChangePassword).setOnClickListener(v -> 
-            startActivity(new Intent(this, ChangePasswordActivity.class)));
     }
 
     private void fetchProfileData() {

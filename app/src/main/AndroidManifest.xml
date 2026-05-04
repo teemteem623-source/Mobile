@@ -21,7 +21,6 @@
         <activity android:name=".OrderDetailActivity" android:exported="false" />
         <activity android:name=".AddUserActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".OderActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ChangePasswordActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ProfileActivity" android:exported="false" android:windowSoftInputMode="adjustPan" />
         <activity android:name=".Update_AddressActivity" android:exported="false" android:windowSoftInputMode="adjustPan" />
         <activity android:name=".Add_AddressActivity" android:exported="false" android:windowSoftInputMode="adjustPan" />

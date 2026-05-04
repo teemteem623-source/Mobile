@@ -10,15 +10,18 @@
     tools:context=".UserActivity">
 
     <!-- HEADER SECTION -->
+
+    <!-- CONTENT AREA -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="40dp"
-        android:paddingHorizontal="20dp"
-        android:paddingBottom="16dp"
         android:background="#1E3A8A"
-        app:layout_constraintTop_toTopOf="parent">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="0dp">
 
         <TextView
             android:id="@+id/tvLogo"
@@ -28,9 +31,9 @@
             android:textColor="#FFFFFF"
             android:textSize="22sp"
             android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/tvHeaderTitle"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/tvHeaderTitle"
-            app:layout_constraintBottom_toBottomOf="@id/tvHeaderTitle"/>
+            app:layout_constraintTop_toTopOf="@id/tvHeaderTitle" />
 
         <TextView
             android:id="@+id/tvHeaderTitle"
@@ -40,13 +43,12 @@
             android:textColor="#FFFFFF"
             android:textSize="20sp"
             android:textStyle="bold"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- CONTENT AREA -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"

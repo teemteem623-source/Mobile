@@ -14,9 +14,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="40dp"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="12dp"
-        android:background="#FFFFFF"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="16dp"
+        android:background="#1E3A8A"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
@@ -24,7 +24,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/back"
-            app:tint="#1E293B"
+            app:tint="#FFFFFF"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
@@ -34,7 +34,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Giỏ hàng"
-            android:textColor="#000000"
+            android:textColor="#FFFFFF"
             android:textSize="17sp"
             android:textStyle="bold"
             app:layout_constraintTop_toTopOf="parent"

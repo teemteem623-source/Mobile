@@ -23,7 +23,7 @@
             android:id="@+id/btnBack"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:src="@android:drawable/ic_menu_revert"
+            android:src="@drawable/back"
             app:tint="#FFFFFF"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/tvHeaderTitle"
@@ -61,7 +61,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nhập mã voucher"
-                android:textColor="#1E293B"
+                android:textColor="#000000"
                 android:textStyle="bold"
                 android:textSize="16sp" />
 
@@ -80,6 +80,8 @@
                     android:background="@drawable/nav_item_indicator"
                     android:backgroundTint="#FFFFFF"
                     android:hint="Mã giảm giá"
+                    android:textColor="#000000"
+                    android:textColorHint="#444444"
                     android:paddingHorizontal="12dp"
                     android:textSize="14sp" />
 

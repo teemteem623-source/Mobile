@@ -331,42 +331,40 @@
         <LinearLayout
             android:id="@+id/btnAddToCart"
             android:layout_width="0dp"
-            android:layout_height="56dp"
+            android:layout_height="50dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
             android:gravity="center"
             android:orientation="horizontal"
             android:clickable="true"
             android:focusable="true"
-            android:background="@drawable/bg_indicator_circle"
-            android:backgroundTint="#EFF6FF">
+            android:background="@drawable/bg_button_pill_secondary">
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/addcart"
-                app:tint="#1E40AF"/>
+                app:tint="#1E3A8A"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Thêm giỏ hàng"
                 android:textSize="13sp"
                 android:layout_marginStart="8dp"
-                android:textColor="#1E40AF"
+                android:textColor="#1E3A8A"
                 android:textStyle="bold"/>
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/btnBuyNow"
             android:layout_width="0dp"
-            android:layout_height="56dp"
+            android:layout_height="50dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:gravity="center"
             android:orientation="horizontal"
             android:clickable="true"
             android:focusable="true"
-            android:background="@drawable/bg_indicator_circle"
-            android:backgroundTint="#1E3A8A">
+            android:background="@drawable/bg_button_pill_primary">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

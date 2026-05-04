@@ -1,14 +1,20 @@
 package com.example.hitcapp;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -28,6 +34,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.example.hitcapp.adapters.ProductAdapter;
+import com.example.hitcapp.adapters.SearchSuggestionAdapter;
 import com.example.hitcapp.models.Product;
 import com.example.hitcapp.utils.VoucherService;
 import com.google.android.material.tabs.TabLayout;
@@ -36,19 +43,36 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class HomeActivity extends AppCompatActivity {
 
     private static final String TAG = "HomeActivity";
+    private static final String PREFS_NAME = "SearchPrefs";
+    private static final String KEY_HISTORY = "search_history";
+
     private ViewPager2 viewPagerBanner;
     private TabLayout tabLayoutIndicator;
     private RecyclerView rvFeatured, rvNew, rvSale;
     private SwipeRefreshLayout swipeRefresh;
     private LinearLayout tabHome, tabProduct, tabNotification, tabProfile;
     private TextView tvCartBadge, tvSeeAllSale, tvSeeAllFeatured, tvSeeAllNew;
+    
+    // Search Views
+    private View searchCardTrigger;
+    private View layoutSearchOverlay;
+    private EditText edtSearchOverlay;
+    private ImageView btnBackSearch, btnClearSearch;
+    private TextView tvBtnSearch;
+    private RecyclerView rvSuggestions;
+    private SearchSuggestionAdapter suggestionAdapter;
+    private List<String> allProductNames = new ArrayList<>();
+    private List<String> searchHistory = new ArrayList<>();
     
     private ProductAdapter featuredAdapter, newAdapter, saleAdapter;
     private FirebaseFirestore db;
@@ -67,27 +91,21 @@ public class HomeActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         voucherService = new VoucherService();
         
-        // KIỂM TRA VÀ PHÁT VOUCHER MẶC ĐỊNH CHO NGƯỜI DÙNG (CHỈ MỘT LẦN)
         if (auth.getCurrentUser() != null) {
             voucherService.addInitialVouchers(this, auth.getUid());
         }
         
+        loadSearchHistory();
         initViews();
         setupInsets();
         initCustomBottomNav();
         setupRecyclerViews();
-        setupSearch();
+        setupSearchLogic();
         
         loadAllData();
+        fetchProductNamesForSuggestions();
 
         swipeRefresh.setOnRefreshListener(this::loadAllData);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        updateCartBadge();
-        if (tabHome != null) selectTab(tabHome);
     }
 
     private void initViews() {
@@ -102,36 +120,199 @@ public class HomeActivity extends AppCompatActivity {
         tvSeeAllFeatured = findViewById(R.id.tvSeeAllFeatured);
         tvSeeAllNew = findViewById(R.id.tvSeeAllNew);
         
-        findViewById(R.id.layoutCart).setOnClickListener(v -> startActivity(new Intent(this, CartActivity.class)));
+        // Search Overlay Views
+        searchCardTrigger = findViewById(R.id.searchCardTrigger);
+        layoutSearchOverlay = findViewById(R.id.layoutSearchOverlay);
+        edtSearchOverlay = findViewById(R.id.edtSearchOverlay);
+        btnBackSearch = findViewById(R.id.btnBackSearch);
+        btnClearSearch = findViewById(R.id.btnClearSearch);
+        tvBtnSearch = findViewById(R.id.tvBtnSearch);
+        rvSuggestions = findViewById(R.id.rvSuggestions);
         
-        if (tvSeeAllSale != null) {
-            tvSeeAllSale.setOnClickListener(v -> openProductList("FLASH_SALE"));
+        findViewById(R.id.layoutCart).setOnClickListener(v -> startActivity(new Intent(this, CartActivity.class)));
+
+        View btnVoucher = findViewById(R.id.btnVoucher);
+        if (btnVoucher != null) {
+            btnVoucher.setOnClickListener(v -> startActivity(new Intent(this, VoucherActivity.class)));
         }
-        if (tvSeeAllFeatured != null) {
-            tvSeeAllFeatured.setOnClickListener(v -> openProductList("FEATURED"));
+
+        View btnOrders = findViewById(R.id.btnOrders);
+        if (btnOrders != null) {
+            btnOrders.setOnClickListener(v -> startActivity(new Intent(this, OderActivity.class)));
         }
-        if (tvSeeAllNew != null) {
-            tvSeeAllNew.setOnClickListener(v -> openProductList("NEW"));
+        
+        if (tvSeeAllSale != null) tvSeeAllSale.setOnClickListener(v -> openProductList("FLASH_SALE"));
+        if (tvSeeAllFeatured != null) tvSeeAllFeatured.setOnClickListener(v -> openProductList("FEATURED"));
+        if (tvSeeAllNew != null) tvSeeAllNew.setOnClickListener(v -> openProductList("NEW"));
+    }
+
+    private void setupSearchLogic() {
+        suggestionAdapter = new SearchSuggestionAdapter(this::performSearch);
+        suggestionAdapter.setOnDeleteHistoryListener(this::deleteHistoryItem);
+        rvSuggestions.setLayoutManager(new LinearLayoutManager(this));
+        rvSuggestions.setAdapter(suggestionAdapter);
+
+        searchCardTrigger.setOnClickListener(v -> {
+            layoutSearchOverlay.setVisibility(View.VISIBLE);
+            edtSearchOverlay.requestFocus();
+            showKeyboard(edtSearchOverlay);
+            showSearchHistory();
+        });
+
+        btnBackSearch.setOnClickListener(v -> {
+            layoutSearchOverlay.setVisibility(View.GONE);
+            hideKeyboard(edtSearchOverlay);
+            edtSearchOverlay.setText(""); // Clear text on back
+        });
+
+        btnClearSearch.setOnClickListener(v -> {
+            edtSearchOverlay.setText("");
+            showSearchHistory();
+        });
+
+        tvBtnSearch.setOnClickListener(v -> performSearch(edtSearchOverlay.getText().toString()));
+
+        edtSearchOverlay.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString();
+                btnClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                if (query.isEmpty()) {
+                    showSearchHistory();
+                } else {
+                    updateSuggestions(query);
+                }
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
+        edtSearchOverlay.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                performSearch(edtSearchOverlay.getText().toString());
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void showSearchHistory() {
+        if (searchHistory.isEmpty()) {
+            suggestionAdapter.setData(new ArrayList<>(), "");
+        } else {
+            suggestionAdapter.setData(searchHistory, "");
+        }
+    }
+
+    private void deleteHistoryItem(String item) {
+        searchHistory.remove(item);
+        saveSearchHistory();
+        showSearchHistory();
+    }
+
+    private void updateSuggestions(String query) {
+        if (query.isEmpty()) {
+            showSearchHistory();
+            return;
+        }
+        List<String> filtered = allProductNames.stream()
+                .filter(name -> name.toLowerCase().contains(query.toLowerCase()))
+                .collect(Collectors.toList());
+        suggestionAdapter.setData(filtered, query);
+    }
+
+    private void fetchProductNamesForSuggestions() {
+        db.collection("products").get().addOnSuccessListener(queryDocumentSnapshots -> {
+            allProductNames.clear();
+            for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                String name = doc.getString("name");
+                if (name != null) allProductNames.add(name);
+            }
+        });
+    }
+
+    private void performSearch(String query) {
+        if (query.trim().isEmpty()) return;
+        String q = query.trim();
+        saveToHistory(q);
+        
+        layoutSearchOverlay.setVisibility(View.GONE);
+        hideKeyboard(edtSearchOverlay);
+        edtSearchOverlay.setText(""); // Clear text after search
+        
+        Intent intent = new Intent(this, ProductActivity.class);
+        intent.putExtra("SEARCH_QUERY", q);
+        startActivity(intent);
+    }
+
+    private void saveToHistory(String query) {
+        searchHistory.remove(query);
+        searchHistory.add(0, query);
+        if (searchHistory.size() > 10) {
+            searchHistory.remove(searchHistory.size() - 1);
+        }
+        saveSearchHistory();
+    }
+
+    private void loadSearchHistory() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String json = prefs.getString(KEY_HISTORY, null);
+        if (json != null) {
+            Gson gson = new Gson();
+            searchHistory = gson.fromJson(json, new TypeToken<List<String>>(){}.getType());
+        } else {
+            searchHistory = new ArrayList<>();
+        }
+    }
+
+    private void saveSearchHistory() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(searchHistory);
+        editor.putString(KEY_HISTORY, json);
+        editor.apply();
+    }
+
+    private void showKeyboard(View view) {
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+    }
+
+    private void hideKeyboard(View view) {
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (layoutSearchOverlay.getVisibility() == View.VISIBLE) {
+            layoutSearchOverlay.setVisibility(View.GONE);
+            edtSearchOverlay.setText(""); // Clear text on back
+        } else {
+            super.onBackPressed();
         }
     }
 
     private void openProductList(String filterType) {
-        Intent intent = new Intent(HomeActivity.this, ProductActivity.class);
+        Intent intent = new Intent(this, ProductActivity.class);
         intent.putExtra("FILTER_TYPE", filterType);
         startActivity(intent);
     }
 
     private void updateCartBadge() {
         if (tvCartBadge == null || auth.getCurrentUser() == null) return;
-        
         db.collection("carts")
                 .whereEqualTo("userId", auth.getCurrentUser().getUid())
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int count = queryDocumentSnapshots.size();
-                    if (count > 0) {
+                    int totalQuantity = 0;
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        Long qty = doc.getLong("quantity");
+                        if (qty != null) totalQuantity += qty.intValue();
+                    }
+                    if (totalQuantity > 0) {
                         tvCartBadge.setVisibility(View.VISIBLE);
-                        tvCartBadge.setText(String.valueOf(count));
+                        tvCartBadge.setText(String.valueOf(totalQuantity));
                     } else {
                         tvCartBadge.setVisibility(View.GONE);
                     }
@@ -142,6 +323,7 @@ public class HomeActivity extends AppCompatActivity {
         View mainView = findViewById(R.id.main);
         View topBar = findViewById(R.id.topBarCard);
         View bottomNav = findViewById(R.id.bottomNavigationCustom);
+        View searchHeader = findViewById(R.id.searchHeader);
 
         if (mainView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
@@ -152,6 +334,13 @@ public class HomeActivity extends AppCompatActivity {
         }
         if (topBar != null) {
             ViewCompat.setOnApplyWindowInsetsListener(topBar, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(v.getPaddingLeft(), systemBars.top, v.getPaddingRight(), v.getPaddingBottom());
+                return insets;
+            });
+        }
+        if (searchHeader != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(searchHeader, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                 v.setPadding(v.getPaddingLeft(), systemBars.top, v.getPaddingRight(), v.getPaddingBottom());
                 return insets;
@@ -185,22 +374,6 @@ public class HomeActivity extends AppCompatActivity {
         rvNew.setNestedScrollingEnabled(false);
     }
 
-    private void setupSearch() {
-        View edtSearch = findViewById(R.id.edtSearch);
-        if (edtSearch instanceof TextView) {
-            ((TextView) edtSearch).setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                    String query = ((TextView) edtSearch).getText().toString().trim();
-                    Intent intent = new Intent(HomeActivity.this, ProductActivity.class);
-                    intent.putExtra("SEARCH_QUERY", query);
-                    startActivity(intent);
-                    return true;
-                }
-                return false;
-            });
-        }
-    }
-
     private void loadAllData() {
         if (swipeRefresh != null) swipeRefresh.setRefreshing(true);
         fetchBanners();
@@ -231,7 +404,6 @@ public class HomeActivity extends AppCompatActivity {
                     checkAllLoaded();
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error fetching banners", e);
                     viewPagerBanner.setVisibility(View.GONE);
                     tabLayoutIndicator.setVisibility(View.GONE);
                     checkAllLoaded();
@@ -255,10 +427,7 @@ public class HomeActivity extends AppCompatActivity {
                     adapter.setData(products);
                     checkAllLoaded();
                 })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error loading filtered products: " + field, e);
-                    checkAllLoaded();
-                });
+                .addOnFailureListener(e -> checkAllLoaded());
     }
 
     private void setupBannerSlider(List<BannerItem> banners) {
@@ -321,11 +490,9 @@ public class HomeActivity extends AppCompatActivity {
         for (int i = 0; i < tabs.length; i++) {
             LinearLayout tab = tabs[i];
             if (tab == null) continue;
-            
             boolean isSelected = (tab == selected);
             ImageView icon = findViewById(iconIds[i]);
             TextView text = findViewById(textIds[i]);
-
             int color = isSelected ? Color.parseColor("#1E3A8A") : Color.parseColor("#94A3B8");
             if (icon != null) icon.setColorFilter(color);
             if (text != null) {
@@ -336,14 +503,21 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        updateCartBadge();
+        loadSearchHistory(); // Refresh history when coming back from ProductActivity
+        if (tabHome != null) selectTab(tabHome);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         bannerHandler.removeCallbacks(bannerRunnable);
     }
 
     private static class BannerItem {
-        String url;
-        String title;
+        String url, title;
         BannerItem(String url, String title) { this.url = url; this.title = title; }
     }
 

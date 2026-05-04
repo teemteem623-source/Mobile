@@ -122,8 +122,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:hint="Email tài khoản"
+                android:textColorHint="#444444"
                 app:boxStrokeColor="#1E40AF"
-                app:startIconDrawable="@android:drawable/ic_dialog_email">
+                app:startIconDrawable="@android:drawable/ic_dialog_email"
+                app:startIconTint="#1E40AF">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtVerifyEmail"
                     android:layout_width="match_parent"
@@ -140,9 +142,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Mật khẩu"
+                android:textColorHint="#444444"
                 app:passwordToggleEnabled="true"
                 app:boxStrokeColor="#1E40AF"
-                app:startIconDrawable="@android:drawable/ic_lock_idle_lock">
+                app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+                app:startIconTint="#1E40AF">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtVerifyPassword"
                     android:layout_width="match_parent"

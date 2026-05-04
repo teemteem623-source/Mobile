@@ -23,7 +23,7 @@
             android:id="@+id/btnBack"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:src="@android:drawable/ic_menu_revert"
+            android:src="@drawable/back"
             app:tint="#FFFFFF"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/tvHeaderTitle"
@@ -63,6 +63,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Họ và tên"
+                android:textColorHint="#444444"
                 app:boxStrokeColor="#1E3A8A"
                 app:hintTextColor="#1E3A8A">
                 <com.google.android.material.textfield.TextInputEditText
@@ -83,6 +84,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Số điện thoại"
+                android:textColorHint="#444444"
                 app:boxStrokeColor="#1E3A8A"
                 app:hintTextColor="#1E3A8A">
                 <com.google.android.material.textfield.TextInputEditText
@@ -103,6 +105,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Tỉnh / Thành phố"
+                android:textColorHint="#444444"
                 app:boxStrokeColor="#1E3A8A"
                 app:hintTextColor="#1E3A8A">
                 <com.google.android.material.textfield.TextInputEditText
@@ -123,6 +126,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Phường / Xã"
+                android:textColorHint="#444444"
                 app:boxStrokeColor="#1E3A8A"
                 app:hintTextColor="#1E3A8A">
                 <com.google.android.material.textfield.TextInputEditText
@@ -143,6 +147,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Địa chỉ chi tiết (Số nhà, tên đường)"
+                android:textColorHint="#444444"
                 app:boxStrokeColor="#1E3A8A"
                 app:hintTextColor="#1E3A8A">
                 <com.google.android.material.textfield.TextInputEditText

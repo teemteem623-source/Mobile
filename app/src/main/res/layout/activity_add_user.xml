@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFF"
+    android:background="#F8F8FF"
     tools:context=".AddUserActivity">
 
     <!-- HEADER SECTION -->
@@ -23,8 +23,8 @@
             android:id="@+id/btnBack"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:src="@drawable/next"
-            android:rotation="180"
+            android:src="@drawable/back"
+            android:rotation="0"
             app:tint="#FFFFFF"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/tvHeaderTitle"
@@ -117,7 +117,8 @@
                 android:layout_width="320dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:hint="User hoặc Email"
+                android:hint="Email"
+                android:textColorHint="#444444"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
@@ -141,6 +142,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Mật khẩu"
+                android:textColorHint="#444444"
                 app:passwordToggleEnabled="true"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
