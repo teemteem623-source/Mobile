@@ -108,6 +108,7 @@
 
             <!-- Giảm giá vận chuyển -->
             <TextView
+                android:id="@+id/tvTitleShipping"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
@@ -125,6 +126,7 @@
 
             <!-- Giảm giá sản phẩm -->
             <TextView
+                android:id="@+id/tvTitleProduct"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
@@ -139,6 +141,27 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false" />
+
+            <!-- Voucher hết hạn / bị hủy -->
+            <TextView
+                android:id="@+id/tvTitleExpired"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="Voucher hết hạn / Không khả dụng"
+                android:textColor="#94A3B8"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvExpiredVouchers"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:nestedScrollingEnabled="false"
+                android:alpha="0.6"
+                android:visibility="gone" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

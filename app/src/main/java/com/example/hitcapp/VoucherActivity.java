@@ -36,15 +36,17 @@ import java.util.Random;
 
 public class VoucherActivity extends AppCompatActivity {
 
-    private RecyclerView rvShipping, rvProduct;
+    private RecyclerView rvShipping, rvProduct, rvExpired;
     private final List<Voucher> shippingList = new ArrayList<>();
     private final List<Voucher> productList = new ArrayList<>();
-    private VoucherAdapter shippingAdapter, productAdapter;
+    private final List<Voucher> expiredList = new ArrayList<>();
+    
+    private VoucherAdapter shippingAdapter, productAdapter, expiredAdapter;
     
     private Voucher selectedShippingVoucher;
     private Voucher selectedProductVoucher;
 
-    private TextView tvStatus;
+    private TextView tvStatus, tvTitleShipping, tvTitleProduct, tvTitleExpired;
     private EditText edtCode;
     private FirebaseFirestore db;
     private FirebaseAuth auth;
@@ -62,12 +64,10 @@ public class VoucherActivity extends AppCompatActivity {
         initViews();
         setupRecyclerViews();
         
-        // Xử lý auto-fill và tự động áp dụng mã từ thông báo
         if (getIntent().hasExtra("AUTO_FILL_CODE")) {
             String code = getIntent().getStringExtra("AUTO_FILL_CODE");
             if (code != null && !code.isEmpty()) {
                 edtCode.setText(code);
-                // Trì hoãn một chút để đảm bảo UI và Auth đã sẵn sàng
                 edtCode.postDelayed(this::applyVoucherCode, 500);
             }
         }
@@ -95,6 +95,11 @@ public class VoucherActivity extends AppCompatActivity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         edtCode = findViewById(R.id.edtVoucherCode);
         tvStatus = findViewById(R.id.tvCodeStatus);
+        
+        tvTitleShipping = findViewById(R.id.tvTitleShipping);
+        tvTitleProduct = findViewById(R.id.tvTitleProduct);
+        tvTitleExpired = findViewById(R.id.tvTitleExpired);
+
         findViewById(R.id.btnApplyCode).setOnClickListener(v -> applyVoucherCode());
         
         findViewById(R.id.btnConfirmVoucher).setOnClickListener(v -> {
@@ -109,13 +114,19 @@ public class VoucherActivity extends AppCompatActivity {
     private void setupRecyclerViews() {
         rvShipping = findViewById(R.id.rvShippingVouchers);
         rvProduct = findViewById(R.id.rvProductVouchers);
+        rvExpired = findViewById(R.id.rvExpiredVouchers);
+
         rvShipping.setLayoutManager(new LinearLayoutManager(this));
         rvProduct.setLayoutManager(new LinearLayoutManager(this));
+        rvExpired.setLayoutManager(new LinearLayoutManager(this));
 
-        shippingAdapter = new VoucherAdapter(shippingList, true);
-        productAdapter = new VoucherAdapter(productList, false);
+        shippingAdapter = new VoucherAdapter(shippingList, true, false);
+        productAdapter = new VoucherAdapter(productList, false, false);
+        expiredAdapter = new VoucherAdapter(expiredList, false, true);
+
         rvShipping.setAdapter(shippingAdapter);
         rvProduct.setAdapter(productAdapter);
+        rvExpired.setAdapter(expiredAdapter);
     }
 
     private void applyVoucherCode() {
@@ -123,18 +134,13 @@ public class VoucherActivity extends AppCompatActivity {
         if (code.isEmpty()) return;
 
         String uid = auth.getUid();
-        if (uid == null) {
-            Toast.makeText(this, "Vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (uid == null) return;
 
-        // Kiểm tra xem đây có phải là mã tặng kèm (Lucky Draw) không
         if (isLuckyCode(code)) {
             checkAndPerformLuckyDraw(uid, code);
             return;
         }
 
-        // Nếu là mã voucher thông thường trong database
         db.collection("vouchers")
                 .whereEqualTo("code", code)
                 .whereEqualTo("used", false)
@@ -145,6 +151,11 @@ public class VoucherActivity extends AppCompatActivity {
                         Voucher v = doc.toObject(Voucher.class);
                         v.setId(doc.getId());
                         
+                        if ("CANCELLED".equals(v.getStatus()) || "EXPIRED".equals(v.getStatus())) {
+                            showStatus("Mã này không còn khả dụng", "#EF4444");
+                            return;
+                        }
+
                         showStatus("Áp dụng mã thành công!", "#10B981");
                         if (Voucher.TYPE_SHIPPING.equals(v.getType())) selectedShippingVoucher = v;
                         else selectedProductVoucher = v;
@@ -158,7 +169,6 @@ public class VoucherActivity extends AppCompatActivity {
     }
 
     private boolean isLuckyCode(String code) {
-        // Hỗ trợ tất cả các mã bắt đầu bằng HITC-, LUCKY-, GIFT- hoặc các mã đặc biệt
         return code.startsWith("HITC-") || code.startsWith("LUCKY-") || code.startsWith("GIFT-") ||
                code.equals("LUCKY88") || code.equals("GIFT99") || code.equals("HITCAPP") || 
                code.equals("UUDAI100") || code.equals("LUCKY1") || code.equals("HITC88") || code.equals("PROMO10");
@@ -167,31 +177,46 @@ public class VoucherActivity extends AppCompatActivity {
     private void checkAndPerformLuckyDraw(String uid, String code) {
         db.collection("users").document(uid).get().addOnSuccessListener(documentSnapshot -> {
             List<String> usedCodes = (List<String>) documentSnapshot.get("usedLuckyCodes");
+            List<String> revokedCodes = (List<String>) documentSnapshot.get("revokedLuckyCodes");
+
             if (usedCodes != null && usedCodes.contains(code)) {
                 showStatus("Bạn đã sử dụng mã này rồi!", "#EF4444");
+            } else if (revokedCodes != null && revokedCodes.contains(code)) {
+                showStatus("Mã này đã bị thu hồi do hủy đơn hàng!", "#EF4444");
             } else {
-                performLuckyDraw(uid, code);
+                db.collection("notifications")
+                        .whereEqualTo("userId", uid)
+                        .whereEqualTo("voucherCode", code)
+                        .limit(1)
+                        .get()
+                        .addOnSuccessListener(querySnapshot -> {
+                            String orderId = null;
+                            if (!querySnapshot.isEmpty()) {
+                                orderId = querySnapshot.getDocuments().get(0).getString("oderId");
+                            }
+                            performLuckyDraw(uid, code, orderId);
+                        })
+                        .addOnFailureListener(e -> performLuckyDraw(uid, code, null));
             }
         });
     }
 
-    private void performLuckyDraw(String uid, String code) {
+    private void performLuckyDraw(String uid, String code, String orderId) {
         Random r = new Random();
         int chance = r.nextInt(100); 
-        
         Voucher wonVoucher;
         String vId = uid + "_LUCKY_" + System.currentTimeMillis();
-        long expiry = System.currentTimeMillis() + (7L * 24 * 60 * 60 * 1000); // 7 ngày
+        long expiry = System.currentTimeMillis() + (7L * 24 * 60 * 60 * 1000);
 
-        if (chance < 2) { // 2% trúng lớn
-            wonVoucher = new Voucher(vId, "WIN1M", "Voucher Cực Đỉnh", "Giảm 1.000.000đ cho đơn hàng", uid, 1000000L, Voucher.TYPE_DISCOUNT, expiry, false);
-        } else if (chance < 15) { // 13% trúng vừa
-            wonVoucher = new Voucher(vId, "WIN200K", "Voucher May Mắn", "Giảm 200.000đ cho đơn hàng", uid, 200000L, Voucher.TYPE_DISCOUNT, expiry, false);
-        } else if (chance < 40) { // 25% trúng nhỏ
-            wonVoucher = new Voucher(vId, "WIN50K", "Voucher Quà Tặng", "Giảm 50.000đ cho đơn hàng", uid, 50000L, Voucher.TYPE_DISCOUNT, expiry, false);
-        } else { // 60% trúng Freeship
-            wonVoucher = new Voucher(vId, "WINFREE", "Freeship May Mắn", "Miễn phí vận chuyển cho đơn hàng", uid, 0L, Voucher.TYPE_SHIPPING, expiry, false);
-        }
+        if (chance < 1) wonVoucher = new Voucher(vId, "WIN2M", "Voucher Siêu VIP", "Giảm 2.000.000đ", uid, 2000000L, Voucher.TYPE_DISCOUNT, expiry, false);
+        else if (chance < 5) wonVoucher = new Voucher(vId, "WIN1M", "Voucher Cực Đỉnh", "Giảm 1.000.000đ", uid, 1000000L, Voucher.TYPE_DISCOUNT, expiry, false);
+        else if (chance < 15) wonVoucher = new Voucher(vId, "WIN500K", "Voucher Khủng", "Giảm 500.000đ", uid, 500000L, Voucher.TYPE_DISCOUNT, expiry, false);
+        else if (chance < 30) wonVoucher = new Voucher(vId, "WIN200K", "Voucher May Mắn", "Giảm 200.000đ", uid, 200000L, Voucher.TYPE_DISCOUNT, expiry, false);
+        else if (chance < 50) wonVoucher = new Voucher(vId, "WIN100K", "Voucher Quà Tặng", "Giảm 100.000đ", uid, 100000L, Voucher.TYPE_DISCOUNT, expiry, false);
+        else wonVoucher = new Voucher(vId, "WINFREE", "Freeship May Mắn", "Miễn phí vận chuyển", uid, 0L, Voucher.TYPE_SHIPPING, expiry, false);
+
+        wonVoucher.setOrderId(orderId);
+        wonVoucher.setOriginCode(code);
 
         db.collection("vouchers").document(vId).set(wonVoucher).addOnSuccessListener(aVoid -> {
             db.collection("users").document(uid).update("usedLuckyCodes", FieldValue.arrayUnion(code));
@@ -218,29 +243,50 @@ public class VoucherActivity extends AppCompatActivity {
 
         voucherListener = db.collection("vouchers")
                 .whereEqualTo("userId", uid)
-                .whereEqualTo("used", false)
                 .addSnapshotListener((value, error) -> {
-                    if (error != null) return;
-                    if (value != null) {
-                        shippingList.clear(); productList.clear();
-                        for (QueryDocumentSnapshot doc : value) {
-                            Voucher v = doc.toObject(Voucher.class);
-                            v.setId(doc.getId());
+                    if (error != null || value == null) return;
+                    shippingList.clear(); productList.clear(); expiredList.clear();
+                    
+                    for (QueryDocumentSnapshot doc : value) {
+                        Voucher v = doc.toObject(Voucher.class);
+                        v.setId(doc.getId());
+                        
+                        if (v.isUsed() || "CANCELLED".equals(v.getStatus()) || "EXPIRED".equals(v.getStatus()) 
+                            || (v.getExpiryTimestamp() > 0 && v.getExpiryTimestamp() < System.currentTimeMillis())) {
+                            expiredList.add(v);
+                        } else {
                             if (Voucher.TYPE_SHIPPING.equals(v.getType())) shippingList.add(v);
                             else productList.add(v);
                         }
-                        shippingAdapter.notifyDataSetChanged();
-                        productAdapter.notifyDataSetChanged();
                     }
+                    
+                    updateSectionVisibility();
+                    shippingAdapter.notifyDataSetChanged();
+                    productAdapter.notifyDataSetChanged();
+                    expiredAdapter.notifyDataSetChanged();
                 });
+    }
+
+    private void updateSectionVisibility() {
+        tvTitleShipping.setVisibility(shippingList.isEmpty() ? View.GONE : View.VISIBLE);
+        rvShipping.setVisibility(shippingList.isEmpty() ? View.GONE : View.VISIBLE);
+        
+        tvTitleProduct.setVisibility(productList.isEmpty() ? View.GONE : View.VISIBLE);
+        rvProduct.setVisibility(productList.isEmpty() ? View.GONE : View.VISIBLE);
+        
+        tvTitleExpired.setVisibility(expiredList.isEmpty() ? View.GONE : View.VISIBLE);
+        rvExpired.setVisibility(expiredList.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.ViewHolder> {
         private final List<Voucher> list;
         private final boolean isShipping;
+        private final boolean isExpired;
         private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
-        VoucherAdapter(List<Voucher> list, boolean isShipping) { this.list = list; this.isShipping = isShipping; }
+        VoucherAdapter(List<Voucher> list, boolean isShipping, boolean isExpired) { 
+            this.list = list; this.isShipping = isShipping; this.isExpired = isExpired; 
+        }
 
         @NonNull @Override public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_voucher, parent, false);
@@ -251,15 +297,27 @@ public class VoucherActivity extends AppCompatActivity {
             Voucher item = list.get(position);
             holder.tvTitle.setText(item.getTitle());
             holder.tvDesc.setText(item.getDescription());
-            holder.tvExpiry.setText(item.getExpiryTimestamp() > 0 ? "HSD: " + sdf.format(item.getExpiryTimestamp()) : "Không thời hạn");
+            
+            if ("CANCELLED".equals(item.getStatus())) {
+                holder.tvExpiry.setText("Đã bị thu hồi");
+                holder.tvExpiry.setTextColor(Color.RED);
+            } else {
+                holder.tvExpiry.setText(item.getExpiryTimestamp() > 0 ? "HSD: " + sdf.format(item.getExpiryTimestamp()) : "Không thời hạn");
+                holder.tvExpiry.setTextColor(isExpired ? Color.GRAY : Color.parseColor("#64748B"));
+            }
+
             holder.imgIcon.setImageResource(isShipping ? R.drawable.logistic : R.drawable.voucher);
+            if (isExpired) holder.itemView.setAlpha(0.6f);
 
             final boolean isCurrentlySelected = isShipping ? 
                 (selectedShippingVoucher != null && item.getId().equals(selectedShippingVoucher.getId())) :
                 (selectedProductVoucher != null && item.getId().equals(selectedProductVoucher.getId()));
             
             holder.cbSelect.setChecked(isCurrentlySelected);
+            holder.cbSelect.setVisibility(isExpired ? View.GONE : View.VISIBLE);
+            
             holder.itemView.setOnClickListener(v -> {
+                if (isExpired) return;
                 if (isShipping) selectedShippingVoucher = isCurrentlySelected ? null : item;
                 else selectedProductVoucher = isCurrentlySelected ? null : item;
                 notifyDataSetChanged();

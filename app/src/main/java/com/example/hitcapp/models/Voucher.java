@@ -18,6 +18,8 @@ public class Voucher implements Serializable {
     private boolean used;
     private boolean autoApply;
     private String status; // AVAILABLE, EXPIRED, CANCELLED
+    private String originCode; // Mã đã nhập để nhận được voucher này (nếu có)
+    private String orderId; // ID đơn hàng mà voucher này được tặng kèm (nếu có)
 
     public Voucher() {}
 
@@ -68,4 +70,10 @@ public class Voucher implements Serializable {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getOriginCode() { return originCode; }
+    public void setOriginCode(String originCode) { this.originCode = originCode; }
+
+    public String getOrderId() { return orderId; }
+    public void setOrderId(String orderId) { this.orderId = orderId; }
 }

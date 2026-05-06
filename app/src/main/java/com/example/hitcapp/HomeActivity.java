@@ -136,6 +136,11 @@ public class HomeActivity extends AppCompatActivity {
             btnVoucher.setOnClickListener(v -> startActivity(new Intent(this, VoucherActivity.class)));
         }
 
+        View btnAddress = findViewById(R.id.btnAddress);
+        if (btnAddress != null) {
+            btnAddress.setOnClickListener(v -> startActivity(new Intent(this, AddressActivity.class)));
+        }
+
         View btnOrders = findViewById(R.id.btnOrders);
         if (btnOrders != null) {
             btnOrders.setOnClickListener(v -> startActivity(new Intent(this, OderActivity.class)));

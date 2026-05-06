@@ -143,7 +143,7 @@ public class NoticeActivity extends AppCompatActivity {
                         // Nhận diện trạng thái thông minh (Hỗ trợ nhiều từ khóa)
                         if (s.contains("chờ") || s.contains("đặt") || s.contains("pending")) {
                             title = "Mua hàng thành công";
-                            content = "Đơn hàng #" + orderCode + " đã được đặt thành công. Vui lòng chờ shop xác nhận.";
+                            content = "Đơn hàng #" + orderCode + " Đang chờ xác nhận";
                             isNewOrder = true;
                         } else if (s.contains("xác nhận") || s.contains("confirmed")) {
                             title = "Đơn hàng đã xác nhận";
@@ -324,6 +324,15 @@ public class NoticeActivity extends AppCompatActivity {
             Intent intent = new Intent(this, OrderDetailActivity.class);
             intent.putExtra("ORDER_ID", item.oderId);
             startActivity(intent);
+        } else if ("Hệ thống".equals(item.type)) {
+            String title = (item.title != null) ? item.title.toLowerCase() : "";
+            String content = (item.content != null) ? item.content.toLowerCase() : "";
+            
+            if (title.contains("thông tin cá nhân") || content.contains("cập nhật hồ sơ") || content.contains("thông tin cá nhân")) {
+                startActivity(new Intent(this, ProfileActivity.class));
+            } else if (title.contains("tài khoản") || title.contains("liên kết") || content.contains("tài khoản") || content.contains("liên kết")) {
+                startActivity(new Intent(this, AccountManagementActivity.class));
+            }
         }
     }
 
@@ -386,6 +395,11 @@ public class NoticeActivity extends AppCompatActivity {
                                 else if (t.contains("đang giao")) icon = R.drawable.shop;
                                 else if (t.contains("giao hàng thành công")) icon = R.drawable.product;
                                 else if (t.contains("hủy")) icon = R.drawable.reject;
+                            } else if ("Hệ thống".equals(type)) {
+                                if (t.contains("tài khoản") || t.contains("liên kết")) icon = R.drawable.people;
+                                else if (t.contains("thông tin cá nhân")) icon = R.drawable.adduser;
+                                else if (t.contains("thu hồi voucher")) { icon = R.drawable.voucherdelete; colorHex = "#EF4444"; }
+                                else if (t.contains("thu hồi mã quà tặng")) { icon = R.drawable.giftdelete; colorHex = "#EF4444"; }
                             }
                             
                             NoticeItem item = new NoticeItem(title, content, icon, colorHex, type, time, oderId);

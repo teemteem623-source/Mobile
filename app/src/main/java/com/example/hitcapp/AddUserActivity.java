@@ -27,6 +27,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.auth.UserInfo;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
@@ -47,9 +48,9 @@ public class AddUserActivity extends AppCompatActivity {
     private ImageView btnBack;
     
     private SharedPreferences sharedPreferences;
-    private List<UserAccount> accountList;
     private String originalUserId; // Tài khoản đang dùng để thực hiện thêm liên kết
     private String originalUserEmail;
+    private String originalUserProvider;
 
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN = 9001;
@@ -64,9 +65,17 @@ public class AddUserActivity extends AppCompatActivity {
         mFirestore = FirebaseFirestore.getInstance();
         sharedPreferences = getSharedPreferences("MultiAccountPrefs", MODE_PRIVATE);
         
-        if (mAuth.getCurrentUser() != null) {
-            originalUserId = mAuth.getCurrentUser().getUid();
-            originalUserEmail = mAuth.getCurrentUser().getEmail();
+        FirebaseUser current = mAuth.getCurrentUser();
+        if (current != null) {
+            originalUserId = current.getUid();
+            originalUserEmail = current.getEmail();
+            originalUserProvider = "password";
+            for (UserInfo info : current.getProviderData()) {
+                if ("google.com".equals(info.getProviderId())) {
+                    originalUserProvider = "google.com";
+                    break;
+                }
+            }
         }
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -82,8 +91,6 @@ public class AddUserActivity extends AppCompatActivity {
         if (btnAddAccount != null) btnAddAccount.setOnClickListener(v -> performAddAccount());
         if (btnGoogleLogin != null) btnGoogleLogin.setOnClickListener(v -> signInWithGoogle());
         
-        loadCurrentAccountList();
-
         String emailExtra = getIntent().getStringExtra("email");
         if (!TextUtils.isEmpty(emailExtra)) {
             edtIdentity.setText(emailExtra);
@@ -97,22 +104,6 @@ public class AddUserActivity extends AppCompatActivity {
         btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
         edtIdentity = findViewById(R.id.edtAccountIdentity);
         edtPassword = findViewById(R.id.edtAccountPassword);
-    }
-
-    private void loadCurrentAccountList() {
-        String json = sharedPreferences.getString("accounts", "[]");
-        Gson gson = new Gson();
-        Type type = new TypeToken<ArrayList<UserAccount>>() {}.getType();
-        accountList = gson.fromJson(json, type);
-        if (accountList == null) accountList = new ArrayList<>();
-    }
-
-    private void saveAccounts() {
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        Gson gson = new Gson();
-        String json = gson.toJson(accountList);
-        editor.putString("accounts", json);
-        editor.apply();
     }
 
     private void performAddAccount() {
@@ -172,37 +163,50 @@ public class AddUserActivity extends AppCompatActivity {
     }
 
     private void saveAndGo(FirebaseUser newUser, String provider) {
-        if (newUser != null) {
-            boolean exists = false;
-            for (UserAccount acc : accountList) {
-                if (acc.uid.equals(newUser.getUid())) {
-                    acc.provider = provider; 
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                accountList.add(new UserAccount(newUser.getUid(), newUser.getEmail(), provider));
-                
-                // 1. Thông báo cho tài khoản GỐC (Người thực hiện thêm)
-                if (originalUserId != null) {
-                    sendNotification(originalUserId, "Đã thêm tài khoản thành công", 
-                        "Bạn đã thêm tài khoản " + newUser.getEmail() + " thành công.", "Hệ thống");
-                }
-                
-                // 2. Thông báo cho tài khoản ĐƯỢC THÊM (Người vừa đăng nhập)
-                sendNotification(newUser.getUid(), "Liên kết tài khoản thành công", 
-                    "Tài khoản của bạn đã được liên kết với " + (originalUserEmail != null ? originalUserEmail : "một tài khoản khác"), "Hệ thống");
+        if (newUser != null && originalUserId != null) {
+            // Liên kết 2 chiều
+            // 1. Thêm B vào danh sách của A
+            addLink(originalUserId, new UserAccount(newUser.getUid(), newUser.getEmail(), provider));
+            
+            // 2. Thêm A vào danh sách của B
+            addLink(newUser.getUid(), new UserAccount(originalUserId, originalUserEmail, originalUserProvider));
 
-                Toast.makeText(this, "Đã thêm tài khoản mới", Toast.LENGTH_SHORT).show();
-            }
-            saveAccounts();
+            // Thông báo
+            sendNotification(originalUserId, "Đã thêm tài khoản thành công", 
+                "Bạn đã thêm tài khoản " + newUser.getEmail() + " thành công.", "Hệ thống");
+            
+            sendNotification(newUser.getUid(), "Liên kết tài khoản thành công", 
+                "Tài khoản của bạn đã được liên kết với " + (originalUserEmail != null ? originalUserEmail : "một tài khoản khác"), "Hệ thống");
+
+            Toast.makeText(this, "Đã liên kết tài khoản thành công", Toast.LENGTH_SHORT).show();
             
             Intent intent = new Intent(this, HomeActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();
         }
+    }
+
+    private void addLink(String ownerUid, UserAccount targetAcc) {
+        String key = "links_" + ownerUid;
+        String json = sharedPreferences.getString(key, "[]");
+        Gson gson = new Gson();
+        Type type = new TypeToken<ArrayList<UserAccount>>() {}.getType();
+        List<UserAccount> links = gson.fromJson(json, type);
+        if (links == null) links = new ArrayList<>();
+        
+        boolean exists = false;
+        for (UserAccount acc : links) {
+            if (acc.uid.equals(targetAcc.uid)) {
+                acc.provider = targetAcc.provider;
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            links.add(targetAcc);
+        }
+        sharedPreferences.edit().putString(key, gson.toJson(links)).apply();
     }
 
     private void sendNotification(String targetUserId, String title, String content, String type) {

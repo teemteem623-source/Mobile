@@ -123,6 +123,9 @@ public class PaymentActivity extends AppCompatActivity {
         rbBank = findViewById(R.id.rbBank);
         rbCod = findViewById(R.id.rbCod);
 
+        // Thiết lập logic chọn phương thức thanh toán
+        setupPaymentMethods();
+
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnToAddress).setOnClickListener(v -> 
             startActivityForResult(new Intent(this, AddressActivity.class), REQUEST_CODE_ADDRESS));
@@ -135,6 +138,34 @@ public class PaymentActivity extends AppCompatActivity {
         });
         
         findViewById(R.id.btnOrder).setOnClickListener(v -> placeOrder());
+    }
+
+    private void setupPaymentMethods() {
+        View layoutCod = findViewById(R.id.layoutCod);
+        View layoutBank = findViewById(R.id.layoutBank);
+
+        // Mặc định chọn COD theo yêu cầu
+        rbCod.setChecked(true);
+        rbBank.setChecked(false);
+
+        // Xử lý khi nhấn vào cụm "Thanh toán khi nhận hàng"
+        View.OnClickListener codSelectListener = v -> {
+            rbCod.setChecked(true);
+            rbBank.setChecked(false);
+        };
+
+        // Xử lý khi nhấn vào cụm "Chuyển khoản ngân hàng"
+        View.OnClickListener bankSelectListener = v -> {
+            rbBank.setChecked(true);
+            rbCod.setChecked(false);
+        };
+
+        // Gán listener cho cả Layout và RadioButton để đảm bảo tính đồng nhất
+        if (layoutCod != null) layoutCod.setOnClickListener(codSelectListener);
+        rbCod.setOnClickListener(codSelectListener);
+
+        if (layoutBank != null) layoutBank.setOnClickListener(bankSelectListener);
+        rbBank.setOnClickListener(bankSelectListener);
     }
 
     private void setupInsets() {
@@ -270,7 +301,7 @@ public class PaymentActivity extends AppCompatActivity {
         order.put("buyerPhone", buyerPhone);
         order.put("shippingAddress", buyerAddress);
         order.put("status", "Chờ xác nhận");
-        order.put("paymentMethod", rbBank.isChecked() ? "Chuyển khoản" : "COD");
+        order.put("paymentMethod", rbBank.isChecked() ? "Chuyển khoản" : "Thanh toán khi nhận hàng");
         order.put("totalPrice", totalOriginalPrice);
         order.put("shippingFee", shippingFee);
         order.put("finalPrice", finalPriceValue);
@@ -293,9 +324,6 @@ public class PaymentActivity extends AppCompatActivity {
             clearPurchasedItemsFromCart();
             if (selectedShippingVoucher != null) markVoucherUsed(selectedShippingVoucher.getId());
             if (selectedProductVoucher != null) markVoucherUsed(selectedProductVoucher.getId());
-            
-            // Loại bỏ checkAndRewardAfterOrder để tránh lặp mã voucher (NoticeActivity sẽ lo việc này)
-            // voucherService.checkAndRewardAfterOrder(auth.getUid());
             
             Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_SHORT).show();
             

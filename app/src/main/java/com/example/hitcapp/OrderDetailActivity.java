@@ -22,11 +22,13 @@ import com.bumptech.glide.Glide;
 import com.example.hitcapp.models.CartItem;
 import com.example.hitcapp.models.Order;
 import com.example.hitcapp.models.OrderItem;
+import com.example.hitcapp.models.Voucher;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -122,12 +124,74 @@ public class OrderDetailActivity extends AppCompatActivity {
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(OrderDetailActivity.this, "Đã hủy đơn hàng thành công", Toast.LENGTH_SHORT).show();
                     if (currentOrder != null) {
+                        String displayOrderId = currentOrder.getOrderId();
                         sendNotification("Hủy đơn hàng thành công", 
-                            "Bạn đã hủy đơn hàng #" + currentOrder.getOrderId() + " thành công.", 
+                            "Bạn đã hủy đơn hàng #" + displayOrderId + " thành công.", 
                             "Đơn hàng", orderId);
+                        
+                        // Logic thu hồi voucher hoặc mã voucher may mắn
+                        revokeVouchersAndCodes(orderId, displayOrderId);
                     }
                 })
                 .addOnFailureListener(e -> Toast.makeText(OrderDetailActivity.this, "Lỗi khi hủy đơn hàng", Toast.LENGTH_SHORT).show());
+    }
+
+    private void revokeVouchersAndCodes(String firestoreOrderId, String displayOrderId) {
+        String uid = auth.getUid();
+        if (uid == null) return;
+
+        // 1. Tìm voucher người dùng đã nhận từ mã (nếu đã nhập mã)
+        db.collection("vouchers")
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("orderId", firestoreOrderId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                            Voucher v = doc.toObject(Voucher.class);
+                            // Cập nhật trạng thái thành CANCELLED thay vì xóa
+                            db.collection("vouchers").document(doc.getId()).update("status", "CANCELLED");
+                            
+                            // Đánh dấu mã gốc là đã bị thu hồi để không nhập lại được
+                            if (v.getOriginCode() != null) {
+                                db.collection("users").document(uid).update("revokedLuckyCodes", FieldValue.arrayUnion(v.getOriginCode()));
+                            }
+
+                            String voucherInfo = (v.getOriginCode() != null) ? "được nhận từ mã " + v.getOriginCode() + " " : "";
+                            sendNotification("Thu hồi Voucher", 
+                                "Voucher " + v.getTitle() + " " + voucherInfo + "đã bị thu hồi vì bạn đã hủy đơn hàng #" + displayOrderId, 
+                                "Hệ thống", firestoreOrderId);
+                        }
+                    } else {
+                        // 2. Nếu chưa nhập mã (chưa có voucher), tìm thông báo mã quà tặng để báo thu hồi mã
+                        db.collection("notifications")
+                                .whereEqualTo("userId", uid)
+                                .whereEqualTo("oderId", firestoreOrderId)
+                                .whereEqualTo("title", "Nhận mã Voucher may mắn 🎁")
+                                .get()
+                                .addOnSuccessListener(notices -> {
+                                    if (!notices.isEmpty()) {
+                                        String code = notices.getDocuments().get(0).getString("voucherCode");
+                                        // Thêm mã vào danh sách thu hồi của user
+                                        db.collection("users").document(uid).update("revokedLuckyCodes", FieldValue.arrayUnion(code));
+
+                                        // Tạo một Voucher giả với trạng thái CANCELLED để hiển thị trong lịch sử
+                                        String dummyVId = uid + "_REVOKED_" + System.currentTimeMillis();
+                                        Voucher dummy = new Voucher(dummyVId, "REVOKED", "Mã quà tặng bị thu hồi",
+                                                "Mã " + code + " đã bị vô hiệu hóa do hủy đơn #" + displayOrderId,
+                                                uid, 0L, Voucher.TYPE_DISCOUNT, System.currentTimeMillis(), false);
+                                        dummy.setStatus("CANCELLED");
+                                        dummy.setOrderId(firestoreOrderId);
+                                        dummy.setOriginCode(code);
+                                        db.collection("vouchers").document(dummyVId).set(dummy);
+
+                                        sendNotification("Thu hồi mã quà tặng", 
+                                            "Đã thu hồi mã " + code + " nhận voucher quà tặng vì hủy đơn hàng #" + displayOrderId, 
+                                            "Hệ thống", firestoreOrderId);
+                                    }
+                                });
+                    }
+                });
     }
 
     private void sendNotification(String title, String content, String type, String oderId) {
@@ -271,9 +335,9 @@ public class OrderDetailActivity extends AppCompatActivity {
                 subtotal += item.getPrice() * item.getQuantity();
                 View itemView = LayoutInflater.from(this).inflate(R.layout.item_payment_product, containerOrderItems, false);
                 Glide.with(this).load(item.getImageUrl()).placeholder(R.drawable.phone_mockup).into((ImageView) itemView.findViewById(R.id.imgProduct));
-                ((TextView)itemView.findViewById(R.id.tvProductName)).setText(item.getName());
-                ((TextView)itemView.findViewById(R.id.tvProductPrice)).setText(String.format(Locale.getDefault(), "%,dđ", item.getPrice()));
-                ((TextView)itemView.findViewById(R.id.tvQuantity)).setText("x" + item.getQuantity());
+                ((TextView) itemView.findViewById(R.id.tvProductName)).setText(item.getName());
+                ((TextView) itemView.findViewById(R.id.tvProductPrice)).setText(String.format(Locale.getDefault(), "%,dđ", item.getPrice()));
+                ((TextView) itemView.findViewById(R.id.tvQuantity)).setText("x" + item.getQuantity());
                 itemView.setOnClickListener(v -> {
                     Intent intent = new Intent(this, DetailActivity.class);
                     intent.putExtra("PRODUCT_ID", item.getProductId());

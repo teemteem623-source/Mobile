@@ -34,7 +34,6 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.auth.UserInfo;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
@@ -54,7 +53,6 @@ public class AccountManagementActivity extends AppCompatActivity {
     private ImageView btnBack;
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private List<AddUserActivity.UserAccount> accountList;
     private List<AddUserActivity.UserAccount> displayList;
     private AccountAdapter adapter;
     private SharedPreferences sharedPreferences;
@@ -77,7 +75,6 @@ public class AccountManagementActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
         btnAddAccount.setOnClickListener(v -> {
-            Toast.makeText(this, "Đang chuyển sang trang thêm tài khoản...", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(this, AddUserActivity.class);
             startActivity(intent);
         });
@@ -93,7 +90,6 @@ public class AccountManagementActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        accountList = new ArrayList<>();
         displayList = new ArrayList<>();
         adapter = new AccountAdapter(displayList, new AccountAdapter.OnAccountActionListener() {
             @Override
@@ -111,54 +107,23 @@ public class AccountManagementActivity extends AppCompatActivity {
     }
 
     private void loadAccounts() {
-        String json = sharedPreferences.getString("accounts", "[]");
+        FirebaseUser current = mAuth.getCurrentUser();
+        if (current == null) return;
+
+        String key = "links_" + current.getUid();
+        String json = sharedPreferences.getString(key, "[]");
         Gson gson = new Gson();
         Type type = new TypeToken<ArrayList<AddUserActivity.UserAccount>>() {}.getType();
         
-        accountList.clear();
         List<AddUserActivity.UserAccount> savedAccounts = gson.fromJson(json, type);
-        if (savedAccounts != null) {
-            for (AddUserActivity.UserAccount acc : savedAccounts) {
-                if (acc.provider == null) acc.provider = "password"; 
-                accountList.add(acc);
-            }
-        }
-
-        FirebaseUser current = mAuth.getCurrentUser();
-        if (current != null) {
-            String provider = "password";
-            for (UserInfo userInfo : current.getProviderData()) {
-                if (userInfo.getProviderId().equals("google.com")) {
-                    provider = "google.com";
-                    break;
-                }
-            }
-
-            boolean exists = false;
-            for (AddUserActivity.UserAccount acc : accountList) {
-                if (acc.uid.equals(current.getUid())) {
-                    acc.provider = provider;
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                accountList.add(new AddUserActivity.UserAccount(current.getUid(), current.getEmail(), provider));
-            }
-            saveAccounts();
-        }
-
-        updateDisplayList();
-    }
-
-    private void updateDisplayList() {
         displayList.clear();
-        FirebaseUser current = mAuth.getCurrentUser();
-        String currentUid = (current != null) ? current.getUid() : "";
-
-        for (AddUserActivity.UserAccount acc : accountList) {
-            if (!acc.uid.equals(currentUid)) {
-                displayList.add(acc);
+        if (savedAccounts != null) {
+            String currentUid = current.getUid();
+            for (AddUserActivity.UserAccount acc : savedAccounts) {
+                // Chỉ hiển thị các tài khoản KHÁC tài khoản hiện tại
+                if (!acc.uid.equals(currentUid)) {
+                    displayList.add(acc);
+                }
             }
         }
 
@@ -172,37 +137,54 @@ public class AccountManagementActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
-    private void saveAccounts() {
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        Gson gson = new Gson();
-        String json = gson.toJson(accountList);
-        editor.putString("accounts", json);
-        editor.apply();
-    }
-
-    private void confirmDeleteLink(AddUserActivity.UserAccount account) {
+    private void confirmDeleteLink(AddUserActivity.UserAccount targetAccount) {
         new AlertDialog.Builder(this)
                 .setTitle("Xóa liên kết")
-                .setMessage("Bạn có chắc chắn muốn xóa liên kết với tài khoản " + account.email + "?")
+                .setMessage("Bạn có chắc chắn muốn xóa liên kết với tài khoản " + targetAccount.email + "?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     FirebaseUser current = mAuth.getCurrentUser();
                     if (current != null) {
-                        // Thông báo cho bên dùng để thêm (tài khoản hiện tại)
-                        sendNotification(current.getUid(), "Đã xóa tài khoản thêm", 
-                            "Bạn đã xóa liên kết với tài khoản " + account.email, "Hệ thống");
-                        
-                        // Thông báo cho bên được thêm (tài khoản bị xóa liên kết)
-                        sendNotification(account.uid, "Đã hủy liên kết", 
-                            "Tài khoản của bạn đã bị hủy liên kết khỏi tài khoản " + current.getEmail(), "Hệ thống");
-                    }
+                        String currentUid = current.getUid();
+                        String targetUid = targetAccount.uid;
 
-                    accountList.remove(account);
-                    saveAccounts();
-                    updateDisplayList();
-                    Toast.makeText(this, "Đã xóa liên kết tài khoản thành công!", Toast.LENGTH_SHORT).show();
+                        // Thực hiện xóa liên kết 2 chiều
+                        removeLink(currentUid, targetUid);
+                        removeLink(targetUid, currentUid);
+
+                        // Gửi thông báo cho cả 2 bên
+                        sendNotification(currentUid, "Đã xóa liên kết tài khoản", 
+                            "Bạn đã xóa liên kết với tài khoản " + targetAccount.email, "Hệ thống");
+                        
+                        sendNotification(targetUid, "Đã hủy liên kết tài khoản", 
+                            "Tài khoản của bạn đã bị hủy liên kết khỏi tài khoản " + current.getEmail(), "Hệ thống");
+
+                        loadAccounts();
+                        Toast.makeText(this, "Đã xóa liên kết tài khoản thành công!", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
+    }
+
+    private void removeLink(String ownerUid, String targetUidToRemove) {
+        String key = "links_" + ownerUid;
+        String json = sharedPreferences.getString(key, "[]");
+        Gson gson = new Gson();
+        Type type = new TypeToken<ArrayList<AddUserActivity.UserAccount>>() {}.getType();
+        List<AddUserActivity.UserAccount> links = gson.fromJson(json, type);
+        
+        if (links != null) {
+            boolean changed = false;
+            for (int i = links.size() - 1; i >= 0; i--) {
+                if (links.get(i).uid.equals(targetUidToRemove)) {
+                    links.remove(i);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                sharedPreferences.edit().putString(key, gson.toJson(links)).apply();
+            }
+        }
     }
 
     private void sendNotification(String userId, String title, String content, String type) {
