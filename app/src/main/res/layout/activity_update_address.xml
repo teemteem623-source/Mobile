@@ -172,12 +172,16 @@
         android:id="@+id/btnUpdate"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:layout_margin="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="116dp"
         android:text="CẬP NHẬT"
         android:textStyle="bold"
         android:textColor="#FFFFFF"
         app:cornerRadius="12dp"
         app:backgroundTint="#1E40AF"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
